@@ -24,6 +24,14 @@ export const ActionCard = styled(Button)(({ theme }) => ({
   },
 }));
 
+export const ActionIcon = styled('span')(({ theme }) => ({
+  display: 'inline-flex',
+  color: theme.palette.primary.main,
+  '& svg': {
+    fontSize: 28,
+  },
+}));
+
 export const ActionTitle = styled('span')(({ theme }) => ({
   fontSize: theme.typography.h6.fontSize,
   fontWeight: theme.typography.h6.fontWeight,

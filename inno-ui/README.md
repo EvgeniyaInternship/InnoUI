@@ -49,24 +49,26 @@ One screen per slice. The main page composes the header, body, and bottom widget
 
 Large regions of the main page. A widget may use features and shared UI.
 
-| Slice    | Contents                                    |
-| -------- | ------------------------------------------- |
-| `header` | Clinic name and sign-in. `Header.styles.ts` |
-| `body`   | Intro and the action grid. `Body.styles.ts` |
-| `bottom` | Footer. `Bottom.styles.ts`                  |
+| Slice            | Contents                                                                |
+| ---------------- | ----------------------------------------------------------------------- |
+| `header`         | Clinic name and sign-in. `Header.styles.ts`                             |
+| `body`           | Intro and the action grid. `Body.styles.ts`                             |
+| `bottom`         | Footer. `Bottom.styles.ts`                                              |
+| `account-access` | Choice between signing in and creating an account. Opened from the page |
 
 The action grid uses `repeat(auto-fit, minmax(...))`, so the cards reflow with the viewport instead of keeping a fixed arrangement.
 
 ### features
 
-One user action per slice. Each action is still a mock: it opens a notice and does not call the API.
+One user action per slice. The clinic actions are still mocks: they open a notice and do not call the API. Sign-in opens the account choice, then closes it. Patient registration collects the Profiles API patient fields. It does not send the request yet.
 
-| Slice                    | Action                     |
-| ------------------------ | -------------------------- |
-| `sign-in`                | Sign In in the header      |
-| `choose-doctor`          | Choose a doctor            |
-| `choose-service`         | Choose a service           |
-| `chat-with-receptionist` | Chat with the receptionist |
+| Slice                    | Action                                                                   |
+| ------------------------ | ------------------------------------------------------------------------ |
+| `sign-in`                | Sign In in the header                                                    |
+| `patient-registration`   | Patient form: email, password, name, phone, birth date, insurance number |
+| `choose-doctor`          | Choose a doctor                                                          |
+| `choose-service`         | Choose a service                                                         |
+| `chat-with-receptionist` | Chat with the receptionist                                               |
 
 ### shared
 
@@ -75,6 +77,7 @@ Reusable code with no knowledge of pages, widgets, or features.
 | Path                     | Contents                                                                      |
 | ------------------------ | ----------------------------------------------------------------------------- |
 | `config/theme.ts`        | Palette, typography, shape, content width, and Material UI component defaults |
+| `config/auth.ts`         | Auth login address, `https://localhost:7165/Auth/login`                       |
 | `ui/content-frame`       | Shared content width and horizontal padding                                   |
 | `ui/mock-action-button`  | Action card. Visuals are in `MockActionButton.styles.ts`                      |
 | `ui/mock-notice`         | Snackbar used by mock actions. Placement and duration come from the theme     |
@@ -84,17 +87,20 @@ Reusable code with no knowledge of pages, widgets, or features.
 
 Versions are the ranges declared in `package.json`.
 
-| Package         | Version  |
-| --------------- | -------- |
-| react           | ^19.3.1  |
-| react-dom       | ^19.3.1  |
-| @mui/material   | ^9.5.0   |
-| @emotion/react  | ^11.14.0 |
-| @emotion/styled | ^11.14.1 |
-| vite            | ^8.3.6   |
-| typescript      | ~6.0.3   |
-| eslint          | ^10.14.0 |
-| prettier        | ^3.9.10  |
+| Package             | Version  |
+| ------------------- | -------- |
+| react               | ^19.3.1  |
+| react-dom           | ^19.3.1  |
+| @mui/material       | ^9.5.0   |
+| @mui/icons-material | ^9.5.0   |
+| @mui/x-date-pickers | ^9.17.0  |
+| dayjs               | ^1.11.23 |
+| @emotion/react      | ^11.14.0 |
+| @emotion/styled     | ^11.14.1 |
+| vite                | ^8.3.6   |
+| typescript          | ~6.0.3   |
+| eslint              | ^10.14.0 |
+| prettier            | ^3.9.10  |
 
 ## Scripts
 
