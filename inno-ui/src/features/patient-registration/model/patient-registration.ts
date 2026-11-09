@@ -9,6 +9,10 @@ export type PatientRegistrationValues = {
   insuranceNumber: string;
 };
 
+const phoneNumberPattern = /^\+?[1-9]\d{1,14}$/;
+const nationalInsuranceNumberPattern =
+  /^(?!(?:BG|GB|KN|NK|NT|TN|ZZ))[A-CEGHJ-PR-TW-Z][A-NP-Z](?:\s*\d{2}){3}\s*[A-D]$/i;
+
 export type RegisterPatientDto = {
   role: 'Patient';
   email: string;
@@ -22,6 +26,10 @@ export type RegisterPatientDto = {
   insuranceNumber: string;
 };
 
+export type PatientRegistrationErrors = Partial<
+  Pick<PatientRegistrationValues, 'email' | 'phoneNumber' | 'insuranceNumber'>
+>;
+
 export const emptyPatientRegistration: PatientRegistrationValues = {
   email: '',
   password: '',
@@ -32,6 +40,34 @@ export const emptyPatientRegistration: PatientRegistrationValues = {
   birthDate: '',
   insuranceNumber: '',
 };
+
+export function validatePatientRegistration(
+  values: PatientRegistrationValues,
+): PatientRegistrationErrors {
+  const errors: PatientRegistrationErrors = {};
+  const email = values.email.trim();
+  const phoneNumber = values.phoneNumber.trim();
+  const insuranceNumber = values.insuranceNumber.trim();
+  if (email.length > 0 && !isAspNetCoreEmail(email)) {
+    errors.email = 'Invalid email format.';
+  }
+  if (phoneNumber.length > 0 && !phoneNumberPattern.test(phoneNumber)) {
+    errors.phoneNumber = 'Invalid phone number format.';
+  }
+  if (
+    insuranceNumber.length > 0 &&
+    !nationalInsuranceNumberPattern.test(insuranceNumber)
+  ) {
+    errors.insuranceNumber = 'Invalid National Insurance Number format.';
+  }
+  return errors;
+}
+
+export function hasPatientRegistrationErrors(
+  errors: PatientRegistrationErrors,
+): boolean {
+  return Object.keys(errors).length > 0;
+}
 
 export function createRegisterPatientDto(
   values: PatientRegistrationValues,
@@ -54,4 +90,13 @@ export function createRegisterPatientDto(
     photoId: null,
     insuranceNumber: values.insuranceNumber.trim(),
   };
+}
+
+function isAspNetCoreEmail(value: string): boolean {
+  const atIndex = value.indexOf('@');
+  return (
+    atIndex > 0 &&
+    atIndex !== value.length - 1 &&
+    atIndex === value.lastIndexOf('@')
+  );
 }

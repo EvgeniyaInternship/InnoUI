@@ -21,6 +21,8 @@ import type { Dayjs } from 'dayjs';
 import {
   createRegisterPatientDto,
   emptyPatientRegistration,
+  hasPatientRegistrationErrors,
+  validatePatientRegistration,
 } from '../model/patient-registration';
 import type {
   PatientRegistrationValues,
@@ -47,9 +49,11 @@ export function PatientRegistrationForm({
   onCancel,
 }: PatientRegistrationFormProps) {
   const [values, setValues] = useState(emptyPatientRegistration);
+  const [isSubmitted, setIsSubmitted] = useState(false);
   const [registration, setRegistration] = useState<RegisterPatientDto | null>(
     null,
   );
+  const formatErrors = isSubmitted ? validatePatientRegistration(values) : {};
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>): void => {
     const name = event.target.name as keyof PatientRegistrationValues;
@@ -68,6 +72,12 @@ export function PatientRegistrationForm({
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
+    setIsSubmitted(true);
+    const nextErrors = validatePatientRegistration(values);
+    if (hasPatientRegistrationErrors(nextErrors)) {
+      setRegistration(null);
+      return;
+    }
     setRegistration(createRegisterPatientDto(values));
   };
 
@@ -85,6 +95,8 @@ export function PatientRegistrationForm({
                 type="email"
                 value={values.email}
                 onChange={handleChange}
+                error={Boolean(formatErrors.email)}
+                helperText={formatErrors.email}
                 required
                 fullWidth
                 autoComplete="email"
@@ -154,7 +166,11 @@ export function PatientRegistrationForm({
                 type="tel"
                 value={values.phoneNumber}
                 onChange={handleChange}
-                helperText="International format, such as +447911123456."
+                error={Boolean(formatErrors.phoneNumber)}
+                helperText={
+                  formatErrors.phoneNumber ??
+                  'International format, such as +447911123456.'
+                }
                 required
                 fullWidth
                 autoComplete="tel"
@@ -187,10 +203,16 @@ export function PatientRegistrationForm({
               label="Insurance number"
               value={values.insuranceNumber}
               onChange={handleChange}
+              error={Boolean(formatErrors.insuranceNumber)}
               helperText={
-                <InsurancePattern>
-                  National Insurance number, such as AB 12 34 56 C.
-                </InsurancePattern>
+                <>
+                  {formatErrors.insuranceNumber ? (
+                    <span>{formatErrors.insuranceNumber}</span>
+                  ) : null}
+                  <InsurancePattern>
+                    National Insurance number, such as AB 12 34 56 C.
+                  </InsurancePattern>
+                </>
               }
               required
               fullWidth
