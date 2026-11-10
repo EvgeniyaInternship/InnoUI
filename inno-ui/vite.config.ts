@@ -12,4 +12,13 @@ export default defineConfig({
       '@': path.resolve(sourceRoot),
     },
   },
+  server: {
+    proxy: {
+      '/profiles': {
+        target: 'http://localhost:5082',
+        changeOrigin: true,
+        rewrite: (requestPath) => requestPath.replace(/^\/profiles/, ''),
+      },
+    },
+  },
 });
