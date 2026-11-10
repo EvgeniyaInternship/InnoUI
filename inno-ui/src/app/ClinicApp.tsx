@@ -1,0 +1,91 @@
+import { useEffect, useState } from 'react';
+import { AccountPage } from '@/pages/account/ui/AccountPage';
+import { MainPage } from '@/pages/main/ui/MainPage';
+import { accountPath, homePath } from '@/shared/config/routes';
+import { authLogoutUrl } from '@/shared/config/auth';
+import { useRoute } from '@/shared/lib/use-route';
+import {
+  clearSignedInAccount,
+  loadSignedInAccount,
+  readSignedInAccount,
+  saveSignedInAccount,
+} from '@/shared/session/signed-in-account';
+import type { SignedInAccount } from '@/shared/session/signed-in-account';
+import { AccountAccessDialog } from '@/widgets/account-access/ui/AccountAccessDialog';
+import { Bottom } from '@/widgets/bottom/ui/Bottom';
+import { Header } from '@/widgets/header/ui/Header';
+import { PageMain, PageRoot } from './ClinicApp.styles';
+
+export function ClinicApp() {
+  const { path, navigate } = useRoute();
+  const [isAccountAccessOpen, setIsAccountAccessOpen] = useState(false);
+  const [isSessionReady, setIsSessionReady] = useState(false);
+  const [account, setAccount] = useState<SignedInAccount | null>(
+    readSignedInAccount,
+  );
+
+  useEffect(() => {
+    let isCurrent = true;
+    void loadSignedInAccount().then((nextAccount) => {
+      if (!isCurrent) {
+        return;
+      }
+      if (nextAccount !== null) {
+        setAccount(nextAccount);
+      }
+      setIsSessionReady(true);
+    });
+    return () => {
+      isCurrent = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isSessionReady && path === accountPath && account === null) {
+      navigate(homePath);
+    }
+  }, [account, isSessionReady, navigate, path]);
+
+  const registerAccount = (nextAccount: SignedInAccount): void => {
+    saveSignedInAccount(nextAccount);
+    setAccount(nextAccount);
+  };
+
+  const logOut = (): void => {
+    clearSignedInAccount();
+    setAccount(null);
+    navigate(homePath);
+    window.location.assign(authLogoutUrl);
+  };
+
+  const showAccount = path === accountPath && account !== null;
+
+  return (
+    <PageRoot>
+      <Header
+        account={account}
+        onSignIn={() => setIsAccountAccessOpen(true)}
+        onLogout={logOut}
+        onHome={() => navigate(homePath)}
+        onViewProfile={() => navigate(accountPath)}
+      />
+      <PageMain>
+        {showAccount ? (
+          <AccountPage
+            onAccountUpdated={setAccount}
+            onBack={() => navigate(homePath)}
+            onDeleted={logOut}
+          />
+        ) : (
+          <MainPage />
+        )}
+      </PageMain>
+      <Bottom />
+      <AccountAccessDialog
+        open={isAccountAccessOpen}
+        onClose={() => setIsAccountAccessOpen(false)}
+        onRegistered={registerAccount}
+      />
+    </PageRoot>
+  );
+}

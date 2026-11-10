@@ -1,10 +1,10 @@
-import { MainPage } from '@/pages/main/ui/MainPage';
 import { AppThemeProvider } from './providers/AppThemeProvider';
+import { ClinicApp } from './ClinicApp';
 
 export function App() {
   return (
     <AppThemeProvider>
-      <MainPage />
+      <ClinicApp />
     </AppThemeProvider>
   );
 }

@@ -34,16 +34,18 @@ Application root. References pages and shared.
 
 | Path                             | Contents                                      |
 | -------------------------------- | --------------------------------------------- |
-| `App.tsx`                        | Renders the theme provider and the main page  |
+| `App.tsx`                        | Renders the theme provider and the clinic shell |
+| `ClinicApp.tsx`                  | Header, footer, and the current page            |
 | `providers/AppThemeProvider.tsx` | Material UI `ThemeProvider` and `CssBaseline` |
 
 ### pages
 
-One screen per slice. The main page composes the header, body, and bottom widgets. It does not own their styles.
+One screen per slice. The clinic shell composes the header, the current page, and the footer.
 
-| Slice  | Contents                                                        |
-| ------ | --------------------------------------------------------------- |
-| `main` | Unauthorized main page. `MainPage.styles.ts` is the page column |
+| Slice     | Contents                                      |
+| --------- | --------------------------------------------- |
+| `main`    | Clinic home with the action grid              |
+| `account` | Signed-in profile, opened from View profile   |
 
 ### widgets
 
@@ -65,7 +67,8 @@ One user action per slice. The clinic actions are still mocks: they open a notic
 | Slice                    | Action                                                                   |
 | ------------------------ | ------------------------------------------------------------------------ |
 | `sign-in`                | Sign In in the header                                                    |
-| `account-menu`           | Signed-in name, with settings, view account, and log out                 |
+| `account-menu`           | Signed-in name, with settings, view profile, and log out                 |
+| `account-profile`        | Profile photo, account details, personal information, and delete account |
 | `patient-registration`   | Patient form: email, password, name, phone, birth date, insurance number |
 | `choose-doctor`          | Choose a doctor                                                          |
 | `choose-service`         | Choose a service                                                         |

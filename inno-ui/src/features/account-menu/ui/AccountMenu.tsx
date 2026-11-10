@@ -12,9 +12,14 @@ import { AccountButton, AccountMenuCard } from './AccountMenu.styles';
 type AccountMenuProps = {
   account: SignedInAccount;
   onLogout: () => void;
+  onViewProfile: () => void;
 };
 
-export function AccountMenu({ account, onLogout }: AccountMenuProps) {
+export function AccountMenu({
+  account,
+  onLogout,
+  onViewProfile,
+}: AccountMenuProps) {
   const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   const closeMenu = (): void => {
     setAnchor(null);
@@ -22,6 +27,10 @@ export function AccountMenu({ account, onLogout }: AccountMenuProps) {
   const logOut = (): void => {
     closeMenu();
     onLogout();
+  };
+  const viewProfile = (): void => {
+    closeMenu();
+    onViewProfile();
   };
 
   return (
@@ -47,11 +56,11 @@ export function AccountMenu({ account, onLogout }: AccountMenuProps) {
           </ListItemIcon>
           Settings
         </MenuItem>
-        <MenuItem onClick={closeMenu}>
+        <MenuItem onClick={viewProfile}>
           <ListItemIcon>
             <PersonOutlinedIcon />
           </ListItemIcon>
-          View account
+          View profile
         </MenuItem>
         <Divider />
         <MenuItem onClick={logOut}>

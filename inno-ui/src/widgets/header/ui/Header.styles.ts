@@ -7,8 +7,15 @@ export const HeaderToolbar = styled(Toolbar)(({ theme }) => ({
   minHeight: theme.spacing(8),
 }));
 
-export const Brand = styled('span')(({ theme }) => ({
+export const Brand = styled('button')(({ theme }) => ({
   flexGrow: 1,
+  padding: 0,
+  border: 0,
+  background: 'none',
+  color: 'inherit',
+  font: 'inherit',
+  textAlign: 'left',
+  cursor: 'pointer',
   fontSize: theme.typography.h6.fontSize,
   fontWeight: theme.typography.h6.fontWeight,
   lineHeight: theme.typography.h6.lineHeight,
