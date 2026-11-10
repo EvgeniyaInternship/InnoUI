@@ -7,16 +7,19 @@ import DialogTitle from '@mui/material/DialogTitle';
 import Typography from '@mui/material/Typography';
 import { PatientRegistrationForm } from '@/features/patient-registration/ui/PatientRegistrationForm';
 import { authLoginUrl } from '@/shared/config/auth';
+import type { SignedInAccount } from '@/shared/session/signed-in-account';
 import { ChoiceActions, ChoiceContent } from './AccountAccessDialog.styles';
 
 type AccountAccessDialogProps = {
   open: boolean;
   onClose: () => void;
+  onRegistered: (account: SignedInAccount) => void;
 };
 
 export function AccountAccessDialog({
   open,
   onClose,
+  onRegistered,
 }: AccountAccessDialogProps) {
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
 
@@ -31,6 +34,12 @@ export function AccountAccessDialog({
 
   const closeRegistration = (): void => {
     setIsRegistrationOpen(false);
+  };
+
+  const finishRegistration = (account: SignedInAccount): void => {
+    setIsRegistrationOpen(false);
+    onClose();
+    onRegistered(account);
   };
 
   return (
@@ -54,7 +63,10 @@ export function AccountAccessDialog({
               variant="contained"
               fullWidth
               startIcon={<LoginOutlinedIcon />}
-              onClick={closeAll}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => {
+                window.location.assign(authLoginUrl);
+              }}
             >
               Sign in
             </Button>
@@ -76,7 +88,10 @@ export function AccountAccessDialog({
         maxWidth="sm"
         scroll="paper"
       >
-        <PatientRegistrationForm onCancel={closeRegistration} />
+        <PatientRegistrationForm
+          onCancel={closeRegistration}
+          onRegistered={finishRegistration}
+        />
       </Dialog>
     </>
   );

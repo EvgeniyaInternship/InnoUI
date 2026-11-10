@@ -51,7 +51,7 @@ Large regions of the main page. A widget may use features and shared UI.
 
 | Slice            | Contents                                                                |
 | ---------------- | ----------------------------------------------------------------------- |
-| `header`         | Clinic name and sign-in. `Header.styles.ts`                             |
+| `header`         | Clinic name, sign-in, or the signed-in account menu. `Header.styles.ts` |
 | `body`           | Intro and the action grid. `Body.styles.ts`                             |
 | `bottom`         | Footer. `Bottom.styles.ts`                                              |
 | `account-access` | Choice between signing in and creating an account. Opened from the page |
@@ -60,11 +60,12 @@ The action grid uses `repeat(auto-fit, minmax(...))`, so the cards reflow with t
 
 ### features
 
-One user action per slice. The clinic actions are still mocks: they open a notice and do not call the API. Sign-in opens the account choice, then closes it. Patient registration collects the Profiles API patient fields. It does not send the request yet.
+One user action per slice. The clinic actions are still mocks: they open a notice and do not call the API. Sign-in opens the account choice, then closes it and opens the Auth login. Patient registration posts a correct form to the Profiles API. A signed-in header shows the patient name and can log out through the Auth API.
 
 | Slice                    | Action                                                                   |
 | ------------------------ | ------------------------------------------------------------------------ |
 | `sign-in`                | Sign In in the header                                                    |
+| `account-menu`           | Signed-in name, with settings, view account, and log out                 |
 | `patient-registration`   | Patient form: email, password, name, phone, birth date, insurance number |
 | `choose-doctor`          | Choose a doctor                                                          |
 | `choose-service`         | Choose a service                                                         |
@@ -74,14 +75,15 @@ One user action per slice. The clinic actions are still mocks: they open a notic
 
 Reusable code with no knowledge of pages, widgets, or features.
 
-| Path                     | Contents                                                                      |
-| ------------------------ | ----------------------------------------------------------------------------- |
-| `config/theme.ts`        | Palette, typography, shape, content width, and Material UI component defaults |
-| `config/auth.ts`         | Auth login address, `https://localhost:7165/Auth/login`                       |
-| `ui/content-frame`       | Shared content width and horizontal padding                                   |
-| `ui/mock-action-button`  | Action card. Visuals are in `MockActionButton.styles.ts`                      |
-| `ui/mock-notice`         | Snackbar used by mock actions. Placement and duration come from the theme     |
-| `lib/use-mock-notice.ts` | Open and close state for a mock notice                                        |
+| Path                           | Contents                                                                      |
+| ------------------------------ | ----------------------------------------------------------------------------- |
+| `config/theme.ts`              | Palette, typography, shape, content width, and Material UI component defaults |
+| `config/auth.ts`               | Auth login, Auth logout, and Profiles registration addresses                  |
+| `session/signed-in-account.ts` | Signed-in name kept for this browser tab                                      |
+| `ui/content-frame`             | Shared content width and horizontal padding                                   |
+| `ui/mock-action-button`        | Action card. Visuals are in `MockActionButton.styles.ts`                      |
+| `ui/mock-notice`               | Snackbar used by mock actions. Placement and duration come from the theme     |
+| `lib/use-mock-notice.ts`       | Open and close state for a mock notice                                        |
 
 ## npm packages
 

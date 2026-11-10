@@ -18,16 +18,14 @@ import TextField from '@mui/material/TextField';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
+import type { SignedInAccount } from '@/shared/session/signed-in-account';
+import { registerPatient } from '../api/register-patient';
 import {
-  createRegisterPatientDto,
   emptyPatientRegistration,
   hasPatientRegistrationErrors,
   validatePatientRegistration,
 } from '../model/patient-registration';
-import type {
-  PatientRegistrationValues,
-  RegisterPatientDto,
-} from '../model/patient-registration';
+import type { PatientRegistrationValues } from '../model/patient-registration';
 import {
   FieldGrid,
   FieldIconSlot,
@@ -40,6 +38,7 @@ import {
 
 type PatientRegistrationFormProps = {
   onCancel: () => void;
+  onRegistered: (account: SignedInAccount) => void;
 };
 
 const formId = 'patient-registration-form';
@@ -47,19 +46,19 @@ const birthDateFormat = 'DD MMM YYYY';
 
 export function PatientRegistrationForm({
   onCancel,
+  onRegistered,
 }: PatientRegistrationFormProps) {
   const [values, setValues] = useState(emptyPatientRegistration);
   const [isSubmitted, setIsSubmitted] = useState(false);
-  const [registration, setRegistration] = useState<RegisterPatientDto | null>(
-    null,
-  );
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const formatErrors = isSubmitted ? validatePatientRegistration(values) : {};
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>): void => {
     const name = event.target.name as keyof PatientRegistrationValues;
     const value = event.target.value;
     setValues((current) => ({ ...current, [name]: value }));
-    setRegistration(null);
+    setSubmitError(null);
   };
 
   const handleBirthDateChange = (value: Dayjs | null): void => {
@@ -67,7 +66,7 @@ export function PatientRegistrationForm({
       ...current,
       birthDate: value?.isValid() ? value.format('YYYY-MM-DD') : '',
     }));
-    setRegistration(null);
+    setSubmitError(null);
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
@@ -75,10 +74,22 @@ export function PatientRegistrationForm({
     setIsSubmitted(true);
     const nextErrors = validatePatientRegistration(values);
     if (hasPatientRegistrationErrors(nextErrors)) {
-      setRegistration(null);
       return;
     }
-    setRegistration(createRegisterPatientDto(values));
+    setSubmitError(null);
+    setIsSubmitting(true);
+    void registerPatient(values)
+      .then((account) => {
+        onRegistered(account);
+      })
+      .catch((error: unknown) => {
+        setSubmitError(
+          error instanceof Error ? error.message : 'Registration failed.',
+        );
+      })
+      .finally(() => {
+        setIsSubmitting(false);
+      });
   };
 
   return (
@@ -223,9 +234,7 @@ export function PatientRegistrationForm({
               }}
             />
           </FieldGrid>
-          {registration ? (
-            <Alert severity="success">These details are ready to send.</Alert>
-          ) : null}
+          {submitError ? <Alert severity="error">{submitError}</Alert> : null}
         </RegistrationForm>
       </FormContent>
       <DialogActions>
@@ -236,8 +245,13 @@ export function PatientRegistrationForm({
         >
           Back
         </Button>
-        <Button type="submit" form={formId} variant="contained">
-          Create account
+        <Button
+          type="submit"
+          form={formId}
+          variant="contained"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? 'Creating account' : 'Create account'}
         </Button>
       </DialogActions>
     </>
