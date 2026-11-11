@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ChangeEvent, FormEvent, ReactNode } from 'react';
 import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined';
@@ -21,6 +21,7 @@ import Typography from '@mui/material/Typography';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
+import { loadOffices, loadSpecializations, recordTitle } from '@/shared/api/facility';
 import { saveSignedInAccount } from '@/shared/session/signed-in-account';
 import type { SignedInAccount } from '@/shared/session/signed-in-account';
 import {
@@ -57,10 +58,12 @@ import {
   PhotoCaption,
   PhotoFrame,
   ProfileCard,
+  BackButton,
   ProfileForm,
-  ProfileIntro,
+  ProfileHeading,
   ProfileLead,
   ProfilePage,
+  ProfileTitleRow,
   WideField,
 } from './AccountProfile.styles';
 
@@ -102,21 +105,23 @@ export function AccountProfile({
 
   return (
     <ProfilePage>
-      <Button
-        type="button"
-        onClick={onBack}
-        startIcon={<ArrowBackOutlinedIcon />}
-      >
-        Back
-      </Button>
-      <ProfileIntro>
-        <Typography variant="h4" component="h1">
-          Your profile
-        </Typography>
-        <ProfileLead>
-          Account details, personal information, and the profile photo.
-        </ProfileLead>
-      </ProfileIntro>
+      <ProfileTitleRow>
+        <BackButton
+          type="button"
+          onClick={onBack}
+          startIcon={<ArrowBackOutlinedIcon />}
+        >
+          Back
+        </BackButton>
+        <ProfileHeading>
+          <Typography variant="h4" component="h1">
+            Your profile
+          </Typography>
+          <ProfileLead>
+            Account details, personal information, and the profile photo.
+          </ProfileLead>
+        </ProfileHeading>
+      </ProfileTitleRow>
       <IdentityCard variant="outlined">
         <PhotoFrame aria-hidden="true">
           <PersonOutlinedIcon />
@@ -151,6 +156,31 @@ export function AccountProfile({
 }
 
 function StaffDetailsCard({ details }: { details: StaffDetails }) {
+  const [officeTitle, setOfficeTitle] = useState(details.officeId);
+  const [specializationTitle, setSpecializationTitle] = useState(
+    details.specializationId,
+  );
+
+  useEffect(() => {
+    let isCurrent = true;
+    void Promise.all([loadOffices(), loadSpecializations()]).then(
+      ([offices, specializations]) => {
+        if (!isCurrent) {
+          return;
+        }
+        setOfficeTitle(recordTitle(offices, details.officeId));
+        if (details.specializationId !== null) {
+          setSpecializationTitle(
+            recordTitle(specializations, details.specializationId),
+          );
+        }
+      },
+    );
+    return () => {
+      isCurrent = false;
+    };
+  }, [details.officeId, details.specializationId]);
+
   return (
     <ProfileCard variant="outlined">
       <Typography variant="h6" component="h2">
@@ -167,12 +197,12 @@ function StaffDetailsCard({ details }: { details: StaffDetails }) {
         </DetailRow>
         <DetailRow>
           <DetailLabel>Office</DetailLabel>
-          <DetailValue>{details.officeId}</DetailValue>
+          <DetailValue>{officeTitle}</DetailValue>
         </DetailRow>
         {details.specializationId === null ? null : (
           <DetailRow>
             <DetailLabel>Specialization</DetailLabel>
-            <DetailValue>{details.specializationId}</DetailValue>
+            <DetailValue>{specializationTitle}</DetailValue>
           </DetailRow>
         )}
       </DetailList>

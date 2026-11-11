@@ -4,6 +4,8 @@ import {
 } from '@/shared/config/auth';
 
 export type SignedInAccount = {
+  id?: string | null;
+  role?: number | null;
   firstName: string;
   middleName: string | null;
   lastName: string;
@@ -14,7 +16,7 @@ const storageKey = 'clinic.signedInAccount';
 export function formatAccountLabel(account: SignedInAccount): string {
   const firstInitial = account.firstName.trim().charAt(0).toLocaleUpperCase();
   const middleName = account.middleName?.trim() ?? '';
-  const middleInitial =    
+  const middleInitial =
     middleName.length === 0
       ? ''
       : `${middleName.charAt(0).toLocaleUpperCase()}. `;
@@ -34,7 +36,16 @@ export function readSignedInAccount(): SignedInAccount | null {
 }
 
 export function saveSignedInAccount(account: SignedInAccount): void {
-  sessionStorage.setItem(storageKey, JSON.stringify(account));
+  const current = readSignedInAccount();
+  sessionStorage.setItem(
+    storageKey,
+    JSON.stringify({
+      ...current,
+      ...account,
+      id: account.id ?? current?.id ?? null,
+      role: account.role ?? current?.role ?? null,
+    }),
+  );
 }
 
 export function clearSignedInAccount(): void {
@@ -72,7 +83,10 @@ function readAccountRecord(value: unknown): Record<string, unknown> | null {
     return null;
   }
   const record = value as Record<string, unknown>;
-  if (typeof record.firstName === 'string' || typeof record.FirstName === 'string') {
+  if (
+    typeof record.firstName === 'string' ||
+    typeof record.FirstName === 'string'
+  ) {
     return record;
   }
   const nested = record.account ?? record.Account;
@@ -108,8 +122,34 @@ function readAccount(value: unknown): SignedInAccount | null {
   const middleName =
     typeof middleNameValue === 'string' ? middleNameValue.trim() : '';
   return {
+    id: readId(record),
+    role: readRole(record.role ?? record.Role),
     firstName,
     lastName,
     middleName: middleName.length === 0 ? null : middleName,
   };
+}
+
+const roleNames = ['', 'Admin', 'Receptionist', 'Doctor', 'Patient'];
+
+function readId(record: Record<string, unknown>): string | null {
+  const value = record.id ?? record.Id;
+  return typeof value === 'string' && value.length > 0 ? value : null;
+}
+
+function readRole(value: unknown): number | null {
+  if (
+    typeof value === 'number' &&
+    roleNames[value] !== undefined &&
+    value > 0
+  ) {
+    return value;
+  }
+  if (typeof value !== 'string') {
+    return null;
+  }
+  const namedRole = roleNames.findIndex(
+    (roleName) => roleName.toLowerCase() === value.toLowerCase(),
+  );
+  return namedRole > 0 ? namedRole : null;
 }

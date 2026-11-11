@@ -1,3 +1,4 @@
+import Button from '@mui/material/Button';
 import Paper from '@mui/material/Paper';
 import { styled } from '@mui/material/styles';
 
@@ -11,11 +12,32 @@ export const ProfilePage = styled('section')(({ theme }) => ({
   },
 }));
 
-export const ProfileIntro = styled('div')(({ theme }) => ({
+export const ProfileTitleRow = styled('div')(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'flex-start',
+  justifyContent: 'flex-start',
+  gap: theme.spacing(2),
+  width: '100%',
+}));
+
+export const BackButton = styled(Button)(({ theme }) => ({
+  alignSelf: 'flex-start',
+  flex: '0 0 auto',
+  width: 'auto',
+  minWidth: 0,
+  height: 'auto',
+  margin: 0,
+  paddingInline: theme.spacing(1.5),
+  justifyContent: 'flex-start',
+}));
+
+export const ProfileHeading = styled('div')(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
-  gap: theme.spacing(1),
-  maxWidth: 640,
+  alignItems: 'flex-start',
+  justifyContent: 'center',
+  gap: theme.spacing(0.5),
+  textAlign: 'left',
 }));
 
 export const ProfileLead = styled('p')(({ theme }) => ({
@@ -116,6 +138,11 @@ export const DetailRow = styled('div')(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
   gap: theme.spacing(0.25),
+  padding: theme.spacing(1.5),
+  borderRadius: theme.spacing(1),
+  backgroundColor: theme.palette.background.paper,
+  border: `1px solid ${theme.palette.divider}`,
+  borderLeft: `3px solid ${theme.palette.success.main}`,
 }));
 
 export const DetailLabel = styled('dt')(({ theme }) => ({
@@ -123,9 +150,11 @@ export const DetailLabel = styled('dt')(({ theme }) => ({
   fontSize: theme.typography.body2.fontSize,
 }));
 
-export const DetailValue = styled('dd')({
+export const DetailValue = styled('dd')(({ theme }) => ({
   margin: 0,
-});
+  color: theme.palette.text.primary,
+  fontWeight: 600,
+}));
 
 export const DangerZone = styled('div')(({ theme }) => ({
   display: 'flex',

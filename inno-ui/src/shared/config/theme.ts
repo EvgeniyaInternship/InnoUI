@@ -28,6 +28,12 @@ export const theme = createTheme({
       light: '#F8E7E3',
       contrastText: '#FFFFFF',
     },
+    success: {
+      main: '#8A9468',
+      dark: '#5C6544',
+      light: '#F3F5EE',
+      contrastText: '#FFFFFF',
+    },
     background: {
       default: '#F4F7F8',
       paper: '#FFFFFF',

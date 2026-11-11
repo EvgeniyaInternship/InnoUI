@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
+
+export function navigateTo(nextPath: string): void {
+  if (window.location.pathname !== nextPath) {
+    window.history.pushState(null, '', nextPath);
+  }
+  window.dispatchEvent(new PopStateEvent('popstate'));
+}
 
 export function useRoute(): {
   path: string;
@@ -14,11 +21,5 @@ export function useRoute(): {
       window.removeEventListener('popstate', syncPath);
     };
   }, []);
-  const navigate = useCallback((nextPath: string): void => {
-    if (window.location.pathname !== nextPath) {
-      window.history.pushState(null, '', nextPath);
-    }
-    setPath(nextPath);
-  }, []);
-  return { path, navigate };
+  return { path, navigate: navigateTo };
 }
