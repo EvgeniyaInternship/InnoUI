@@ -57,10 +57,12 @@ import {
   PhotoCaption,
   PhotoFrame,
   ProfileCard,
+  BackButton,
   ProfileForm,
-  ProfileIntro,
+  ProfileHeading,
   ProfileLead,
   ProfilePage,
+  ProfileTitleRow,
   WideField,
 } from './AccountProfile.styles';
 
@@ -102,21 +104,23 @@ export function AccountProfile({
 
   return (
     <ProfilePage>
-      <Button
-        type="button"
-        onClick={onBack}
-        startIcon={<ArrowBackOutlinedIcon />}
-      >
-        Back
-      </Button>
-      <ProfileIntro>
-        <Typography variant="h4" component="h1">
-          Your profile
-        </Typography>
-        <ProfileLead>
-          Account details, personal information, and the profile photo.
-        </ProfileLead>
-      </ProfileIntro>
+      <ProfileTitleRow>
+        <BackButton
+          type="button"
+          onClick={onBack}
+          startIcon={<ArrowBackOutlinedIcon />}
+        >
+          Back
+        </BackButton>
+        <ProfileHeading>
+          <Typography variant="h4" component="h1">
+            Your profile
+          </Typography>
+          <ProfileLead>
+            Account details, personal information, and the profile photo.
+          </ProfileLead>
+        </ProfileHeading>
+      </ProfileTitleRow>
       <IdentityCard variant="outlined">
         <PhotoFrame aria-hidden="true">
           <PersonOutlinedIcon />

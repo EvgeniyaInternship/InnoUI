@@ -1,3 +1,4 @@
+import Button from '@mui/material/Button';
 import Paper from '@mui/material/Paper';
 import { styled } from '@mui/material/styles';
 
@@ -11,16 +12,34 @@ export const ProfilePage = styled('section')(({ theme }) => ({
   },
 }));
 
-export const ProfileIntro = styled('div')(({ theme }) => ({
+export const ProfileTitleRow = styled('div')(({ theme }) => ({
+  display: 'flex',
+  alignItems: 'stretch',
+  justifyContent: 'flex-start',
+  gap: theme.spacing(1.5),
+  maxWidth: 640,
+}));
+
+export const BackButton = styled(Button)({
+  alignSelf: 'stretch',
+  height: 'auto',
+  minWidth: 0,
+  paddingInline: 12,
+});
+
+export const ProfileHeading = styled('div')(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
-  gap: theme.spacing(1),
-  maxWidth: 640,
+  alignItems: 'flex-start',
+  justifyContent: 'center',
+  gap: theme.spacing(0.5),
+  textAlign: 'left',
 }));
 
 export const ProfileLead = styled('p')(({ theme }) => ({
   margin: 0,
   color: theme.palette.text.secondary,
+  textAlign: 'left',
 }));
 
 export const IdentityCard = styled(Paper)(({ theme }) => ({
