@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { AccountPage } from '@/pages/account/ui/AccountPage';
+import { DoctorsPage } from '@/pages/doctors/ui/DoctorsPage';
 import { MainPage } from '@/pages/main/ui/MainPage';
-import { accountPath, homePath } from '@/shared/config/routes';
+import { accountPath, doctorsPath, homePath } from '@/shared/config/routes';
 import { authLogoutUrl } from '@/shared/config/auth';
 import { useRoute } from '@/shared/lib/use-route';
 import {
@@ -59,6 +60,10 @@ export function ClinicApp() {
   };
 
   const showAccount = path === accountPath && account !== null;
+  const doctorId = path.startsWith(`${doctorsPath}/`)
+    ? path.slice(doctorsPath.length + 1)
+    : null;
+  const showDoctors = path === doctorsPath || doctorId !== null;
 
   return (
     <PageRoot>
@@ -75,6 +80,12 @@ export function ClinicApp() {
             onAccountUpdated={setAccount}
             onBack={() => navigate(homePath)}
             onDeleted={logOut}
+          />
+        ) : showDoctors ? (
+          <DoctorsPage
+            doctorId={doctorId}
+            account={account}
+            isSessionReady={isSessionReady}
           />
         ) : (
           <MainPage />

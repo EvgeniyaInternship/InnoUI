@@ -19,6 +19,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (requestPath) => requestPath.replace(/^\/profiles/, ''),
       },
+      '/facility': {
+        target: 'http://localhost:5035',
+        changeOrigin: true,
+        rewrite: (requestPath) => requestPath.replace(/^\/facility/, ''),
+      },
     },
   },
 });
