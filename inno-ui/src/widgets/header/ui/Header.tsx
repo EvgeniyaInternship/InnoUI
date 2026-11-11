@@ -8,15 +8,29 @@ type HeaderProps = {
   account: SignedInAccount | null;
   onSignIn: () => void;
   onLogout: () => void;
+  onHome: () => void;
+  onViewProfile: () => void;
 };
 
-export function Header({ account, onSignIn, onLogout }: HeaderProps) {
+export function Header({
+  account,
+  onSignIn,
+  onLogout,
+  onHome,
+  onViewProfile,
+}: HeaderProps) {
   return (
     <AppBar>
       <HeaderToolbar>
-        <Brand>Clinic</Brand>
+        <Brand type="button" onClick={onHome}>
+          Clinic
+        </Brand>
         {account ? (
-          <AccountMenu account={account} onLogout={onLogout} />
+          <AccountMenu
+            account={account}
+            onLogout={onLogout}
+            onViewProfile={onViewProfile}
+          />
         ) : (
           <SignInButton onClick={onSignIn} />
         )}
