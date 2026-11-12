@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined';
-import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined';
+import { SpecializationIcon } from '@/shared/ui/specialization-icon/SpecializationIcon';
 import Alert from '@mui/material/Alert';
 import Button from '@mui/material/Button';
 import MenuItem from '@mui/material/MenuItem';
@@ -10,6 +10,7 @@ import Typography from '@mui/material/Typography';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
+import { authLoginUrl } from '@/shared/config/auth';
 import { doctorAccountPath, homePath } from '@/shared/config/routes';
 import { navigateTo } from '@/shared/lib/use-route';
 import type { SignedInAccount } from '@/shared/session/signed-in-account';
@@ -20,6 +21,7 @@ import {
   recordTitle,
 } from '@/shared/api/facility';
 import type { FacilityRecord } from '@/shared/api/facility';
+import { Pager } from '@/shared/ui/pager/Pager';
 import { adminRole, doctorName, emptyDoctorFilter } from '../model/doctor';
 import type { DoctorFilter, DoctorSummary } from '../model/doctor';
 import { CreateDoctorDialog } from './CreateDoctorDialog';
@@ -37,7 +39,6 @@ import {
   FilterActions,
   FilterFields,
   FilterPanel,
-  PageRow,
 } from './DoctorCatalog.styles';
 
 type DoctorCatalogProps = {
@@ -131,16 +132,17 @@ export function DoctorCatalog({ account }: DoctorCatalogProps) {
               Filter by office, specialization, and work start date.
             </Typography>
           </DoctorHeading>
+          {isAdmin ? (
+            <Button
+              type="button"
+              variant="contained"
+              sx={{ marginLeft: 'auto', flexShrink: 0, alignSelf: 'flex-end' }}
+              onClick={() => setIsCreating(true)}
+            >
+              Create doctor
+            </Button>
+          ) : null}
         </DoctorTitleRow>
-        {isAdmin ? (
-          <Button
-            type="button"
-            variant="contained"
-            onClick={() => setIsCreating(true)}
-          >
-            Create doctor
-          </Button>
-        ) : null}
       </CatalogHeader>
       <FilterPanel onSubmit={applyFilter}>
         <FilterFields>
@@ -260,11 +262,23 @@ export function DoctorCatalog({ account }: DoctorCatalogProps) {
         {doctors.map((doctor) => (
           <DoctorCard
             key={doctor.id}
-            onClick={() => navigateTo(doctorAccountPath(doctor.id))}
+            onClick={() => {
+              if (account === null) {
+                window.location.assign(authLoginUrl);
+                return;
+              }
+              navigateTo(doctorAccountPath(doctor.id));
+            }}
           >
             <DoctorIdentity>
               <DoctorAvatar aria-hidden="true">
-                <PersonOutlinedIcon />
+                <SpecializationIcon
+                  title={
+                    hasFacilityNames
+                      ? recordTitle(specializations, doctor.specializationId)
+                      : ''
+                  }
+                />
               </DoctorAvatar>
               <span>
                 <Typography component="span" variant="h6">
@@ -283,24 +297,11 @@ export function DoctorCatalog({ account }: DoctorCatalogProps) {
           </DoctorCard>
         ))}
       </DoctorGrid>
-      {totalPages > 1 ? (
-        <PageRow>
-          <Button
-            type="button"
-            disabled={pageNumber === 0}
-            onClick={() => setPageNumber((current) => current - 1)}
-          >
-            Previous
-          </Button>
-          <Button
-            type="button"
-            disabled={pageNumber + 1 >= totalPages}
-            onClick={() => setPageNumber((current) => current + 1)}
-          >
-            Next
-          </Button>
-        </PageRow>
-      ) : null}
+      <Pager
+        pageNumber={pageNumber}
+        totalPages={totalPages}
+        onPageChange={setPageNumber}
+      />
       <CreateDoctorDialog
         open={isCreating}
         offices={offices}

@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { AccountPage } from '@/pages/account/ui/AccountPage';
 import { DoctorsPage } from '@/pages/doctors/ui/DoctorsPage';
 import { MainPage } from '@/pages/main/ui/MainPage';
-import { accountPath, doctorsPath, homePath } from '@/shared/config/routes';
+import { ServicesPage } from '@/pages/services/ui/ServicesPage';
+import { accountPath, doctorsPath, homePath, servicesPath } from '@/shared/config/routes';
 import { authLogoutUrl } from '@/shared/config/auth';
 import { useRoute } from '@/shared/lib/use-route';
 import {
@@ -64,6 +65,10 @@ export function ClinicApp() {
     ? path.slice(doctorsPath.length + 1)
     : null;
   const showDoctors = path === doctorsPath || doctorId !== null;
+  const serviceId = path.startsWith(`${servicesPath}/`)
+    ? path.slice(servicesPath.length + 1)
+    : null;
+  const showServices = path === servicesPath || serviceId !== null;
 
   return (
     <PageRoot>
@@ -87,6 +92,8 @@ export function ClinicApp() {
             account={account}
             isSessionReady={isSessionReady}
           />
+        ) : showServices ? (
+          <ServicesPage serviceId={serviceId} account={account} />
         ) : (
           <MainPage />
         )}
