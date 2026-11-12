@@ -18,6 +18,8 @@ export const ProfileTitleRow = styled('div')(({ theme }) => ({
   justifyContent: 'flex-start',
   gap: theme.spacing(2),
   width: '100%',
+  paddingBottom: theme.spacing(2),
+  borderBottom: `1px solid ${theme.palette.divider}`,
 }));
 
 export const BackButton = styled(Button)(({ theme }) => ({

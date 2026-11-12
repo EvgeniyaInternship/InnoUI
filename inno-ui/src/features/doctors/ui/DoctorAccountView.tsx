@@ -15,6 +15,7 @@ import Typography from '@mui/material/Typography';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
+import { authLoginUrl } from '@/shared/config/auth';
 import { doctorsPath } from '@/shared/config/routes';
 import { navigateTo } from '@/shared/lib/use-route';
 import type { SignedInAccount } from '@/shared/session/signed-in-account';
@@ -73,6 +74,10 @@ export function DoctorAccountView({
 
   useEffect(() => {
     if (!isSessionReady) {
+      return;
+    }
+    if (account === null) {
+      window.location.assign(authLoginUrl);
       return;
     }
     let isCurrent = true;
@@ -486,7 +491,7 @@ export function DoctorAccountView({
                         <TableCell>{service.title}</TableCell>
                         <TableCell>{service.description}</TableCell>
                         <TableCell align="right">
-                          {service.price.toFixed(2)}
+                          {`$${service.price.toFixed(2)}`}
                         </TableCell>
                         <TableCell>
                           {service.isActive ? 'Active' : 'Inactive'}

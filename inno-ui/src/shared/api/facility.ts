@@ -16,6 +16,7 @@ export type DoctorService = {
   description: string;
   price: number;
   isActive: boolean;
+  doctorId: string;
 };
 
 const catalogPageSize = 100;
@@ -117,7 +118,8 @@ function readService(value: unknown): DoctorService | null {
   if (id === null || title === null || price === null || typeof isActive !== 'boolean') {
     return null;
   }
-  return { id, title, description, price, isActive };
+  const doctorId = readString(record, 'doctorId', 'DoctorId') ?? '';
+  return { id, title, description, price, isActive, doctorId };
 }
 
 function asRecord(value: unknown): Record<string, unknown> | null {

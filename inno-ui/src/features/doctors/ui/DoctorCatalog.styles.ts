@@ -17,6 +17,8 @@ export const DoctorTitleRow = styled('div')(({ theme }) => ({
   justifyContent: 'flex-start',
   gap: theme.spacing(2),
   width: '100%',
+  paddingBottom: theme.spacing(2),
+  borderBottom: `1px solid ${theme.palette.divider}`,
 }));
 
 export const BackButton = styled(Button)(({ theme }) => ({
@@ -158,6 +160,10 @@ export const DoctorGrid = styled('div')(({ theme }) => ({
   gap: theme.spacing(2),
   gridTemplateColumns: 'repeat(auto-fill, minmax(16rem, 18rem))',
   justifyContent: 'start',
+  alignContent: 'start',
+  [theme.breakpoints.up('md')]: {
+    minHeight: `calc(3 * 146px + 2 * ${theme.spacing(2)})`,
+  },
 }));
 
 export const DoctorCard = styled(Button)(({ theme }) => ({
