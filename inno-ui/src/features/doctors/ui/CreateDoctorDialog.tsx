@@ -212,7 +212,9 @@ export function CreateDoctorDialog({
                 onChange={(value: Dayjs | null) =>
                   setValues((current) => ({
                     ...current,
-                    birthDate: value?.isValid() ? value.format('YYYY-MM-DD') : '',
+                    birthDate: value?.isValid()
+                      ? value.format('YYYY-MM-DD')
+                      : '',
                   }))
                 }
                 slotProps={{
@@ -222,7 +224,9 @@ export function CreateDoctorDialog({
               <DatePicker
                 label="Work start date"
                 value={
-                  values.workStartDate === '' ? null : dayjs(values.workStartDate)
+                  values.workStartDate === ''
+                    ? null
+                    : dayjs(values.workStartDate)
                 }
                 disableFuture
                 onChange={(value: Dayjs | null) =>
@@ -266,7 +270,10 @@ function validate(values: CreateDoctorValues): string | null {
   if (values.password.length < 8) {
     return 'Password must be at least 8 characters long.';
   }
-  if (values.firstName.trim().length === 0 || values.lastName.trim().length === 0) {
+  if (
+    values.firstName.trim().length === 0 ||
+    values.lastName.trim().length === 0
+  ) {
     return 'First name and last name are required.';
   }
   if (!isPhoneNumber(values.phoneNumber)) {

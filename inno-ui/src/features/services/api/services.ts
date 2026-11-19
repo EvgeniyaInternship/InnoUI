@@ -1,6 +1,10 @@
 import { httpClient } from '@/shared/api/http-client';
 import type { DoctorService } from '@/shared/api/facility';
-import { accountUrl, doctorsUrl, facilityServicesUrl } from '@/shared/config/auth';
+import {
+  accountUrl,
+  doctorsUrl,
+  facilityServicesUrl,
+} from '@/shared/config/auth';
 
 export type ServiceFilter = {
   title: string;
@@ -99,7 +103,9 @@ export async function loadServices(
   };
 }
 
-export async function loadServicesByTitle(title: string): Promise<DoctorService[]> {
+export async function loadServicesByTitle(
+  title: string,
+): Promise<DoctorService[]> {
   const params = new URLSearchParams({
     PageNumber: '0',
     PageSize: '100',
@@ -150,7 +156,9 @@ export async function loadNamedDoctors(): Promise<NamedDoctor[]> {
   return doctors.filter((doctor): doctor is NamedDoctor => doctor !== null);
 }
 
-export async function createService(values: CreateServiceValues): Promise<void> {
+export async function createService(
+  values: CreateServiceValues,
+): Promise<void> {
   const response = await httpClient.post(
     facilityServicesUrl,
     {
@@ -173,7 +181,9 @@ async function readNamedDoctor(value: unknown): Promise<NamedDoctor | null> {
   const accountId =
     record === null ? null : readString(record, 'accountId', 'AccountId');
   const specializationId =
-    record === null ? '' : (readString(record, 'specializationId', 'SpecializationId') ?? '');
+    record === null
+      ? ''
+      : (readString(record, 'specializationId', 'SpecializationId') ?? '');
   if (id === null || accountId === null) {
     return null;
   }
@@ -221,7 +231,12 @@ function readService(value: unknown): DoctorService | null {
   const price = readNumber(record.price ?? record.Price);
   const isActive = record.isActive ?? record.IsActive;
   const doctorId = readString(record, 'doctorId', 'DoctorId') ?? '';
-  if (id === null || title === null || price === null || typeof isActive !== 'boolean') {
+  if (
+    id === null ||
+    title === null ||
+    price === null ||
+    typeof isActive !== 'boolean'
+  ) {
     return null;
   }
   return { id, title, description, price, isActive, doctorId };

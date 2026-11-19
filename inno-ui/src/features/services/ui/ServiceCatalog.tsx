@@ -110,8 +110,10 @@ export function ServiceCatalog({ account }: ServiceCatalogProps) {
     const minPrice = Number(draft.minPrice);
     const maxPrice = Number(draft.maxPrice);
     if (
-      (draft.minPrice.trim().length > 0 && (Number.isNaN(minPrice) || minPrice < 0)) ||
-      (draft.maxPrice.trim().length > 0 && (Number.isNaN(maxPrice) || maxPrice < 0))
+      (draft.minPrice.trim().length > 0 &&
+        (Number.isNaN(minPrice) || minPrice < 0)) ||
+      (draft.maxPrice.trim().length > 0 &&
+        (Number.isNaN(maxPrice) || maxPrice < 0))
     ) {
       setError('Price cannot be less than 0.');
       return;
