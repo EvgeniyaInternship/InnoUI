@@ -52,8 +52,10 @@ export function ServiceCatalog({ account }: ServiceCatalogProps) {
   const [doctors, setDoctors] = useState<NamedDoctor[]>([]);
   const [specializations, setSpecializations] = useState<FacilityRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
+  const requestKey = JSON.stringify({ filter, pageNumber, isCreating });
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  const isLoading = loadedKey !== requestKey;
   const isAdmin = account?.role === 1;
 
   useEffect(() => {
@@ -74,7 +76,6 @@ export function ServiceCatalog({ account }: ServiceCatalogProps) {
 
   useEffect(() => {
     let isCurrent = true;
-    setIsLoading(true);
     void loadServices(filter, pageNumber)
       .then((page) => {
         if (!isCurrent) {
@@ -96,13 +97,13 @@ export function ServiceCatalog({ account }: ServiceCatalogProps) {
       })
       .finally(() => {
         if (isCurrent) {
-          setIsLoading(false);
+          setLoadedKey(requestKey);
         }
       });
     return () => {
       isCurrent = false;
     };
-  }, [filter, pageNumber, isCreating]);
+  }, [filter, pageNumber, isCreating, requestKey]);
 
   const applyFilter = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();

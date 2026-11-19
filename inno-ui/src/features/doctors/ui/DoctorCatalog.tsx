@@ -52,8 +52,10 @@ export function DoctorCatalog({ account }: DoctorCatalogProps) {
   const [doctors, setDoctors] = useState<DoctorSummary[]>([]);
   const [totalPages, setTotalPages] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
+  const requestKey = JSON.stringify({ filter, pageNumber, isCreating });
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  const isLoading = loadedKey !== requestKey;
   const [offices, setOffices] = useState<FacilityRecord[]>([]);
   const [specializations, setSpecializations] = useState<FacilityRecord[]>([]);
   const isAdmin = account?.role === adminRole;
@@ -77,7 +79,6 @@ export function DoctorCatalog({ account }: DoctorCatalogProps) {
 
   useEffect(() => {
     let isCurrent = true;
-    setIsLoading(true);
     void loadDoctors(filter, pageNumber)
       .then((page) => {
         if (!isCurrent) {
@@ -99,13 +100,13 @@ export function DoctorCatalog({ account }: DoctorCatalogProps) {
       })
       .finally(() => {
         if (isCurrent) {
-          setIsLoading(false);
+          setLoadedKey(requestKey);
         }
       });
     return () => {
       isCurrent = false;
     };
-  }, [filter, pageNumber, isCreating]);
+  }, [filter, pageNumber, isCreating, requestKey]);
 
   const applyFilter = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();

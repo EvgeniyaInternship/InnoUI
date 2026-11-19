@@ -46,7 +46,7 @@ export function CreateServiceDialog({
 
   const update =
     (name: 'title' | 'description' | 'price' | 'doctorId') =>
-    (event: ChangeEvent<HTMLInputElement>): void => {
+    (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): void => {
       setValues((current) => ({ ...current, [name]: event.target.value }));
       setError(null);
     };
@@ -110,7 +110,7 @@ export function CreateServiceDialog({
                 if (event.target.value.trim().length > 0 && (Number.isNaN(price) || price < 0)) {
                   return;
                 }
-                update('price');
+                update('price')(event);
               }}
               required
               fullWidth

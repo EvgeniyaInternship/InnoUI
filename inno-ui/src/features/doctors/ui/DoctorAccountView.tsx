@@ -66,7 +66,9 @@ export function DoctorAccountView({
   const [doctor, setDoctor] = useState<DoctorSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loadedDoctorId, setLoadedDoctorId] = useState<string | null>(null);
+  const isLoading =
+    !isSessionReady || account === null || loadedDoctorId !== doctorId;
   const [isSaving, setIsSaving] = useState(false);
   const [offices, setOffices] = useState<FacilityRecord[]>([]);
   const [specializations, setSpecializations] = useState<FacilityRecord[]>([]);
@@ -81,7 +83,6 @@ export function DoctorAccountView({
       return;
     }
     let isCurrent = true;
-    setIsLoading(true);
     void loadDoctor(doctorId)
       .then((nextDoctor) => {
         if (isCurrent) {
@@ -99,7 +100,7 @@ export function DoctorAccountView({
       })
       .finally(() => {
         if (isCurrent) {
-          setIsLoading(false);
+          setLoadedDoctorId(doctorId);
         }
       });
     return () => {
