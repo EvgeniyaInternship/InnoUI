@@ -46,7 +46,7 @@ export function CreateServiceDialog({
 
   const update =
     (name: 'title' | 'description' | 'price' | 'doctorId') =>
-    (event: ChangeEvent<HTMLInputElement>): void => {
+    (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>): void => {
       setValues((current) => ({ ...current, [name]: event.target.value }));
       setError(null);
     };
