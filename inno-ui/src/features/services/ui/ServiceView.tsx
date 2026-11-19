@@ -40,11 +40,11 @@ export function ServiceView({ serviceId }: ServiceViewProps) {
   const [specializations, setSpecializations] = useState<FacilityRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loadedServiceId, setLoadedServiceId] = useState<string | null>(null);
+  const isLoading = loadedServiceId !== serviceId;
 
   useEffect(() => {
     let isCurrent = true;
-    setIsLoading(true);
     void Promise.all([
       loadService(serviceId),
       loadNamedDoctors(),
@@ -75,7 +75,7 @@ export function ServiceView({ serviceId }: ServiceViewProps) {
       })
       .finally(() => {
         if (isCurrent) {
-          setIsLoading(false);
+          setLoadedServiceId(serviceId);
         }
       });
     return () => {

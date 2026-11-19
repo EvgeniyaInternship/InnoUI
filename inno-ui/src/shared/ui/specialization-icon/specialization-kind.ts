@@ -1,13 +1,16 @@
-export enum SpecializationKind {
-  Cardiology = 'cardiology',
-  Dermatology = 'dermatology',
-  Pediatrics = 'pediatrics',
-  FamilyMedicine = 'familyMedicine',
-  Other = 'other',
-}
+export const SpecializationKind = {
+  Cardiology: 'cardiology',
+  Dermatology: 'dermatology',
+  Pediatrics: 'pediatrics',
+  FamilyMedicine: 'familyMedicine',
+  Other: 'other',
+} as const;
+
+export type SpecializationKind =
+  (typeof SpecializationKind)[keyof typeof SpecializationKind];
 
 const specializationKeywords: Record<
-  Exclude<SpecializationKind, SpecializationKind.Other>,
+  Exclude<SpecializationKind, typeof SpecializationKind.Other>,
   readonly string[]
 > = {
   [SpecializationKind.Cardiology]: ['cardio', 'heart'],
