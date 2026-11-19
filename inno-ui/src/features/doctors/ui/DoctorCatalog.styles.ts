@@ -82,12 +82,6 @@ export const CatalogHeader = styled('div')(({ theme }) => ({
   flexWrap: 'wrap',
 }));
 
-export const DoctorIntro = styled('div')(({ theme }) => ({
-  display: 'flex',
-  flexDirection: 'column',
-  gap: theme.spacing(0.5),
-}));
-
 export const FilterPanel = styled('form')(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
@@ -104,7 +98,8 @@ export const FilterFields = styled('div')(({ theme }) => ({
   gridTemplateColumns: '1fr',
   alignItems: 'end',
   [theme.breakpoints.up('md')]: {
-    gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(12rem, 0.9fr) auto',
+    gridTemplateColumns:
+      'minmax(0, 1.2fr) minmax(0, 1.2fr) minmax(12rem, 0.9fr) auto',
   },
 }));
 
@@ -213,11 +208,6 @@ export const DoctorMeta = styled('span')(({ theme }) => ({
   fontWeight: theme.typography.fontWeightRegular,
 }));
 
-export const ViewLabel = styled('span')(({ theme }) => ({
-  color: theme.palette.secondary.main,
-  fontWeight: theme.typography.fontWeightMedium,
-}));
-
 export const ServiceSection = styled('section')(({ theme }) => ({
   display: 'flex',
   flexDirection: 'column',
@@ -240,10 +230,4 @@ export const ServiceTableWrap = styled('div')(({ theme }) => ({
     color: theme.palette.text.primary,
     borderColor: theme.palette.divider,
   },
-}));
-
-export const PageRow = styled('div')(({ theme }) => ({
-  display: 'flex',
-  justifyContent: 'flex-end',
-  gap: theme.spacing(1),
 }));

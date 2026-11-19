@@ -21,7 +21,11 @@ import Typography from '@mui/material/Typography';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
 import type { Dayjs } from 'dayjs';
-import { loadOffices, loadSpecializations, recordTitle } from '@/shared/api/facility';
+import {
+  loadOffices,
+  loadSpecializations,
+  recordTitle,
+} from '@/shared/api/facility';
 import { saveSignedInAccount } from '@/shared/session/signed-in-account';
 import type { SignedInAccount } from '@/shared/session/signed-in-account';
 import {

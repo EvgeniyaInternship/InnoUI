@@ -54,7 +54,10 @@ export function CreateServiceDialog({
   const handleSubmit = (event: FormEvent<HTMLFormElement>): void => {
     event.preventDefault();
     const price = Number(values.price);
-    if (values.title.trim().length === 0 || values.description.trim().length === 0) {
+    if (
+      values.title.trim().length === 0 ||
+      values.description.trim().length === 0
+    ) {
       setError('Title and description are required.');
       return;
     }
@@ -107,7 +110,10 @@ export function CreateServiceDialog({
               slotProps={{ htmlInput: { min: 0 } }}
               onChange={(event) => {
                 const price = Number(event.target.value);
-                if (event.target.value.trim().length > 0 && (Number.isNaN(price) || price < 0)) {
+                if (
+                  event.target.value.trim().length > 0 &&
+                  (Number.isNaN(price) || price < 0)
+                ) {
                   return;
                 }
                 update('price')(event);
