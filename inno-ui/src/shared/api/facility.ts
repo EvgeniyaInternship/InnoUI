@@ -47,10 +47,7 @@ export async function loadDoctorServices(
     .filter((item): item is DoctorService => item !== null);
 }
 
-export function recordTitle(
-  records: FacilityRecord[],
-  id: string,
-): string {
+export function recordTitle(records: FacilityRecord[], id: string): string {
   return records.find((record) => record.id === id)?.title ?? id;
 }
 
@@ -115,7 +112,12 @@ function readService(value: unknown): DoctorService | null {
   const description = readString(record, 'description', 'Description') ?? '';
   const price = readNumber(record.price ?? record.Price);
   const isActive = record.isActive ?? record.IsActive;
-  if (id === null || title === null || price === null || typeof isActive !== 'boolean') {
+  if (
+    id === null ||
+    title === null ||
+    price === null ||
+    typeof isActive !== 'boolean'
+  ) {
     return null;
   }
   const doctorId = readString(record, 'doctorId', 'DoctorId') ?? '';

@@ -451,7 +451,9 @@ export function DoctorAccountView({
               </DetailRow>
               <DetailRow>
                 <DetailLabel>Office</DetailLabel>
-                <DetailValue>{recordTitle(offices, doctor.officeId)}</DetailValue>
+                <DetailValue>
+                  {recordTitle(offices, doctor.officeId)}
+                </DetailValue>
               </DetailRow>
               <DetailRow>
                 <DetailLabel>Birth date</DetailLabel>

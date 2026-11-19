@@ -196,12 +196,6 @@ export const CardDescription = styled('span')(({ theme }) => ({
   WebkitLineClamp: 2,
 }));
 
-export const PageRow = styled('div')(({ theme }) => ({
-  display: 'flex',
-  justifyContent: 'flex-end',
-  gap: theme.spacing(1),
-}));
-
 export const DetailList = styled('dl')(({ theme }) => ({
   display: 'grid',
   gap: theme.spacing(1.5),
@@ -233,10 +227,6 @@ export const DetailValue = styled('dd')(({ theme }) => ({
   color: theme.palette.text.primary,
   fontWeight: 600,
 }));
-
-export const WideDetail = styled('div')({
-  gridColumn: '1 / -1',
-});
 
 export const EditorForm = styled('form')(({ theme }) => ({
   display: 'flex',

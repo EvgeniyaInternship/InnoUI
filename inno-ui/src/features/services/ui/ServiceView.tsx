@@ -14,7 +14,11 @@ import type { DoctorService, FacilityRecord } from '@/shared/api/facility';
 import { servicesPath } from '@/shared/config/routes';
 import { navigateTo } from '@/shared/lib/use-route';
 import { SpecializationIcon } from '@/shared/ui/specialization-icon/SpecializationIcon';
-import { loadNamedDoctors, loadService, loadServicesByTitle } from '../api/services';
+import {
+  loadNamedDoctors,
+  loadService,
+  loadServicesByTitle,
+} from '../api/services';
 import type { NamedDoctor } from '../api/services';
 import {
   BackButton,
@@ -122,7 +126,9 @@ export function ServiceView({ serviceId }: ServiceViewProps) {
       {error ? <Alert severity="error">{error}</Alert> : null}
       {service ? (
         <Summary style={{ opacity: service.isActive ? 1 : 0.6 }}>
-          {service.isActive ? null : <Chip label="Unavailable yet" size="small" />}
+          {service.isActive ? null : (
+            <Chip label="Unavailable yet" size="small" />
+          )}
           <Description>{service.description}</Description>
           <Typography variant="h6" component="h2">
             Doctors who provide this service
@@ -139,7 +145,9 @@ export function ServiceView({ serviceId }: ServiceViewProps) {
               </TableHead>
               <TableBody>
                 {offers.map((offer) => {
-                  const provider = doctors.find((item) => item.id === offer.doctorId);
+                  const provider = doctors.find(
+                    (item) => item.id === offer.doctorId,
+                  );
                   const providerSpecialty = recordTitle(
                     specializations,
                     provider?.specializationId ?? '',

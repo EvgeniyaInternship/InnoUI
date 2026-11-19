@@ -3,7 +3,12 @@ import { AccountPage } from '@/pages/account/ui/AccountPage';
 import { DoctorsPage } from '@/pages/doctors/ui/DoctorsPage';
 import { MainPage } from '@/pages/main/ui/MainPage';
 import { ServicesPage } from '@/pages/services/ui/ServicesPage';
-import { accountPath, doctorsPath, homePath, servicesPath } from '@/shared/config/routes';
+import {
+  accountPath,
+  doctorsPath,
+  homePath,
+  servicesPath,
+} from '@/shared/config/routes';
 import { authLogoutUrl } from '@/shared/config/auth';
 import { useRoute } from '@/shared/lib/use-route';
 import {
