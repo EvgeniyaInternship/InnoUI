@@ -110,7 +110,7 @@ export function CreateServiceDialog({
                 if (event.target.value.trim().length > 0 && (Number.isNaN(price) || price < 0)) {
                   return;
                 }
-                update('price')(event);
+                update('price');
               }}
               required
               fullWidth
