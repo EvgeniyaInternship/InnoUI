@@ -1,3 +1,5 @@
+import { httpClient } from '@/shared/api/http-client';
+import type { HttpResult } from '@/shared/api/http-client';
 import {
   accountUrl,
   currentAccountUrl,
@@ -21,20 +23,21 @@ import type {
   StaffDetails,
 } from '../model/account-profile';
 
-type ProblemBody = {
-  detail?: string;
-  title?: string;
-  errors?: Record<string, string[]>;
-};
-
 const roleNames = ['', 'Admin', 'Receptionist', 'Doctor', 'Patient'];
 
+const profileHttpOptions = {
+  networkMessage: 'Could not reach the profiles service.',
+};
+
 export async function loadAccountDetails(): Promise<AccountDetails> {
-  const response = await request(currentAccountUrl);
-  if (!response.ok) {
-    throw new Error(await readProblem(response, 'Could not load the account.'));
+  const response = await httpClient.get<unknown>(currentAccountUrl, {
+    ...profileHttpOptions,
+    fallbackMessage: 'Could not load the account.',
+  });
+  if (!response.ok || response.data === null) {
+    throw new Error(failureMessage(response, 'Could not load the account.'));
   }
-  const account = readAccountDetails(await response.json());
+  const account = readAccountDetails(response.data);
   if (account === null) {
     throw new Error('Could not read the account.');
   }
@@ -42,16 +45,19 @@ export async function loadAccountDetails(): Promise<AccountDetails> {
 }
 
 export async function loadPatientDetails(): Promise<PatientDetails | null> {
-  const response = await request(currentPatientUrl);
+  const response = await httpClient.get<unknown>(currentPatientUrl, {
+    ...profileHttpOptions,
+    fallbackMessage: 'Could not load personal information.',
+  });
   if (response.status === 404) {
     return null;
   }
-  if (!response.ok) {
+  if (!response.ok || response.data === null) {
     throw new Error(
-      await readProblem(response, 'Could not load personal information.'),
+      failureMessage(response, 'Could not load personal information.'),
     );
   }
-  const patient = readPatientDetails(await response.json());
+  const patient = readPatientDetails(response.data);
   if (patient === null) {
     throw new Error('Could not read personal information.');
   }
@@ -65,16 +71,19 @@ export async function loadStaffDetails(
   if (url === null) {
     return null;
   }
-  const response = await request(url);
+  const response = await httpClient.get<unknown>(url, {
+    ...profileHttpOptions,
+    fallbackMessage: 'Could not load personal information.',
+  });
   if (response.status === 404) {
     return null;
   }
-  if (!response.ok) {
+  if (!response.ok || response.data === null) {
     throw new Error(
-      await readProblem(response, 'Could not load personal information.'),
+      failureMessage(response, 'Could not load personal information.'),
     );
   }
-  const details = readStaffDetails(await response.json(), role === doctorRole);
+  const details = readStaffDetails(response.data, role === doctorRole);
   if (details === null) {
     throw new Error('Could not read personal information.');
   }
@@ -84,15 +93,13 @@ export async function loadStaffDetails(
 export async function updateAccountDetails(
   values: AccountDetails,
 ): Promise<SignedInAccount> {
-  const response = await request(accountUrl, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(createUpdateAccountDto(values)),
-  });
+  const response = await httpClient.put(
+    accountUrl,
+    createUpdateAccountDto(values),
+    { ...profileHttpOptions, fallbackMessage: 'Could not update the account.' },
+  );
   if (!response.ok) {
-    throw new Error(
-      await readProblem(response, 'Could not update the account.'),
-    );
+    throw new Error(failureMessage(response, 'Could not update the account.'));
   }
   const middleName = values.middleName.trim();
   return {
@@ -105,78 +112,45 @@ export async function updateAccountDetails(
 export async function updatePatientDetails(
   values: PatientDetails,
 ): Promise<void> {
-  const response = await request(patientUrl, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(createUpdatePatientDto(values)),
-  });
+  const response = await httpClient.put(
+    patientUrl,
+    createUpdatePatientDto(values),
+    {
+      ...profileHttpOptions,
+      fallbackMessage: 'Could not update personal information.',
+    },
+  );
   if (!response.ok) {
     throw new Error(
-      await readProblem(response, 'Could not update personal information.'),
+      failureMessage(response, 'Could not update personal information.'),
     );
   }
 }
 
 export async function deleteAccount(accountId: string): Promise<void> {
-  const response = await request(`${accountUrl}/${accountId}`, {
-    method: 'DELETE',
+  const response = await httpClient.delete(`${accountUrl}/${accountId}`, {
+    ...profileHttpOptions,
+    fallbackMessage: 'Could not delete the account.',
   });
   if (!response.ok) {
-    throw new Error(
-      await readProblem(response, 'Could not delete the account.'),
-    );
+    throw new Error(failureMessage(response, 'Could not delete the account.'));
   }
 }
 
-async function request(url: string, init?: RequestInit): Promise<Response> {
-  try {
-    return await fetch(url, {
-      ...init,
-      credentials: 'include',
-      headers: {
-        Accept: 'application/json',
-        ...init?.headers,
-      },
-    });
-  } catch {
-    throw new Error('Could not reach the profiles service.');
-  }
-}
-
-async function readProblem(
-  response: Response,
+function failureMessage(
+  result: HttpResult<unknown>,
   fallback: string,
-): Promise<string> {
-  try {
-    const body = (await response.json()) as ProblemBody;
-    if (typeof body.detail === 'string' && body.detail.length > 0) {
-      return body.detail;
-    }
-    const firstError = body.errors
-      ? Object.values(body.errors)
-          .flat()
-          .find((message) => message.length > 0)
-      : undefined;
-    if (firstError) {
-      return firstError;
-    }
-    if (typeof body.title === 'string' && body.title.length > 0) {
-      return body.title;
-    }
-  } catch {
-    return statusFallback(response.status, fallback);
+): string {
+  if (result.message.length > 0 && result.message !== fallback) {
+    return result.message;
   }
-  return statusFallback(response.status, fallback);
-}
-
-function statusFallback(status: number, fallback: string): string {
-  if (status === 401) {
+  if (result.status === 401) {
     return 'Sign in to manage this account.';
   }
-  if (status === 403) {
+  if (result.status === 403) {
     return 'You cannot change this account.';
   }
-  return fallback;
+  return result.message.length > 0 ? result.message : fallback;
 }
 
 function readAccountDetails(value: unknown): AccountDetails | null {

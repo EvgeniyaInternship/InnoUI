@@ -1,5 +1,6 @@
-import { accountUrl, doctorsUrl, facilityServicesUrl } from '@/shared/config/auth';
+import { httpClient } from '@/shared/api/http-client';
 import type { DoctorService } from '@/shared/api/facility';
+import { accountUrl, doctorsUrl, facilityServicesUrl } from '@/shared/config/auth';
 
 export type ServiceFilter = {
   title: string;
@@ -38,10 +39,8 @@ export const emptyServiceFilter: ServiceFilter = {
 
 export const servicePageSize = 9;
 
-type ProblemBody = {
-  detail?: string;
-  title?: string;
-  errors?: Record<string, string[]>;
+const serviceHttpOptions = {
+  networkMessage: 'Could not reach the service.',
 };
 
 export async function loadServices(
@@ -68,11 +67,14 @@ export async function loadServices(
   if (filter.maxPrice.trim().length > 0) {
     params.set('MaxPrice', filter.maxPrice.trim());
   }
-  const response = await request(`${facilityServicesUrl}?${params.toString()}`);
-  if (!response.ok) {
-    throw new Error(await readProblem(response, 'Could not load services.'));
+  const response = await httpClient.get<unknown>(
+    `${facilityServicesUrl}?${params.toString()}`,
+    { ...serviceHttpOptions, fallbackMessage: 'Could not load services.' },
+  );
+  if (!response.ok || response.data === null) {
+    throw new Error(response.message);
   }
-  const page = readPage(await response.json());
+  const page = readPage(response.data);
   if (!needsLocalMatch) {
     return page;
   }
@@ -103,22 +105,28 @@ export async function loadServicesByTitle(title: string): Promise<DoctorService[
     PageSize: '100',
     Title: title.trim(),
   });
-  const response = await request(`${facilityServicesUrl}?${params.toString()}`);
-  if (!response.ok) {
+  const response = await httpClient.get<unknown>(
+    `${facilityServicesUrl}?${params.toString()}`,
+    serviceHttpOptions,
+  );
+  if (!response.ok || response.data === null) {
     return [];
   }
-  const page = readPage(await response.json());
+  const page = readPage(response.data);
   return page.items.filter(
     (item) => item.title.trim().toLowerCase() === title.trim().toLowerCase(),
   );
 }
 
 export async function loadService(serviceId: string): Promise<DoctorService> {
-  const response = await request(`${facilityServicesUrl}/${serviceId}`);
-  if (!response.ok) {
-    throw new Error(await readProblem(response, 'Could not load this service.'));
+  const response = await httpClient.get<unknown>(
+    `${facilityServicesUrl}/${serviceId}`,
+    { ...serviceHttpOptions, fallbackMessage: 'Could not load this service.' },
+  );
+  if (!response.ok || response.data === null) {
+    throw new Error(response.message);
   }
-  const service = readService(await response.json());
+  const service = readService(response.data);
   if (service === null) {
     throw new Error('Could not read this service.');
   }
@@ -127,11 +135,14 @@ export async function loadService(serviceId: string): Promise<DoctorService> {
 
 export async function loadNamedDoctors(): Promise<NamedDoctor[]> {
   const params = new URLSearchParams({ PageNumber: '0', PageSize: '100' });
-  const response = await request(`${doctorsUrl}?${params.toString()}`);
-  if (!response.ok) {
+  const response = await httpClient.get<unknown>(
+    `${doctorsUrl}?${params.toString()}`,
+    serviceHttpOptions,
+  );
+  if (!response.ok || response.data === null) {
     return [];
   }
-  const page = readPageRecord(await response.json());
+  const page = readPageRecord(response.data);
   const items = Array.isArray(page?.items ?? page?.Items)
     ? ((page?.items ?? page?.Items) as unknown[])
     : [];
@@ -140,19 +151,19 @@ export async function loadNamedDoctors(): Promise<NamedDoctor[]> {
 }
 
 export async function createService(values: CreateServiceValues): Promise<void> {
-  const response = await request(facilityServicesUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
+  const response = await httpClient.post(
+    facilityServicesUrl,
+    {
       title: values.title.trim(),
       description: values.description.trim(),
       price: Number(values.price),
       isActive: values.isActive,
       doctorId: values.doctorId,
-    }),
-  });
+    },
+    { ...serviceHttpOptions, fallbackMessage: 'Could not create the service.' },
+  );
   if (!response.ok) {
-    throw new Error(await readProblem(response, 'Could not create the service.'));
+    throw new Error(response.message);
   }
 }
 
@@ -166,11 +177,14 @@ async function readNamedDoctor(value: unknown): Promise<NamedDoctor | null> {
   if (id === null || accountId === null) {
     return null;
   }
-  const accountResponse = await request(`${accountUrl}/${accountId}`);
-  if (!accountResponse.ok) {
+  const accountResponse = await httpClient.get<unknown>(
+    `${accountUrl}/${accountId}`,
+    serviceHttpOptions,
+  );
+  if (!accountResponse.ok || accountResponse.data === null) {
     return { id, name: 'Doctor', specializationId };
   }
-  const account = asRecord(await accountResponse.json());
+  const account = asRecord(accountResponse.data);
   if (account === null) {
     return { id, name: 'Doctor', specializationId };
   }
@@ -182,41 +196,6 @@ async function readNamedDoctor(value: unknown): Promise<NamedDoctor | null> {
     .filter((part) => part.length > 0)
     .join(' ');
   return { id, name: name.length > 0 ? name : 'Doctor', specializationId };
-}
-
-async function request(url: string, init?: RequestInit): Promise<Response> {
-  try {
-    return await fetch(url, {
-      ...init,
-      credentials: 'include',
-      headers: { Accept: 'application/json', ...init?.headers },
-    });
-  } catch {
-    throw new Error('Could not reach the service.');
-  }
-}
-
-async function readProblem(response: Response, fallback: string): Promise<string> {
-  try {
-    const body = (await response.json()) as ProblemBody;
-    if (typeof body.detail === 'string' && body.detail.length > 0) {
-      return body.detail;
-    }
-    const firstError = body.errors
-      ? Object.values(body.errors)
-          .flat()
-          .find((message) => message.length > 0)
-      : undefined;
-    if (firstError) {
-      return firstError;
-    }
-    if (typeof body.title === 'string' && body.title.length > 0) {
-      return body.title;
-    }
-  } catch {
-    return fallback;
-  }
-  return fallback;
 }
 
 function readPage(value: unknown): ServicePage {

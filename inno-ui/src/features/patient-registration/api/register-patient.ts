@@ -1,13 +1,8 @@
+import { httpClient } from '@/shared/api/http-client';
 import { registrationUrl } from '@/shared/config/auth';
 import type { SignedInAccount } from '@/shared/session/signed-in-account';
 import { createRegisterPatientDto } from '../model/patient-registration';
 import type { PatientRegistrationValues } from '../model/patient-registration';
-
-type ProblemBody = {
-  detail?: string;
-  title?: string;
-  errors?: Record<string, string[]>;
-};
 
 type RegisteredPatientResponse = {
   account?: {
@@ -20,51 +15,23 @@ type RegisteredPatientResponse = {
 export async function registerPatient(
   values: PatientRegistrationValues,
 ): Promise<SignedInAccount> {
-  let response: Response;
-  try {
-    response = await fetch(registrationUrl, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(createRegisterPatientDto(values)),
-    });
-  } catch {
-    throw new Error('Could not reach the registration service.');
+  const response = await httpClient.post<RegisteredPatientResponse>(
+    registrationUrl,
+    createRegisterPatientDto(values),
+    {
+      credentials: 'omit',
+      fallbackMessage: 'Registration failed.',
+      networkMessage: 'Could not reach the registration service.',
+    },
+  );
+  if (!response.ok || response.data === null) {
+    throw new Error(response.message);
   }
-  if (!response.ok) {
-    throw new Error(await readProblem(response));
-  }
-  const body = (await response.json()) as RegisteredPatientResponse;
-  const account = readRegisteredAccount(body.account);
+  const account = readRegisteredAccount(response.data.account);
   if (account === null) {
     throw new Error('Registration did not return an account.');
   }
   return account;
-}
-
-async function readProblem(response: Response): Promise<string> {
-  try {
-    const body = (await response.json()) as ProblemBody;
-    if (typeof body.detail === 'string' && body.detail.length > 0) {
-      return body.detail;
-    }
-    const firstError = body.errors
-      ? Object.values(body.errors)
-          .flat()
-          .find((message) => message.length > 0)
-      : undefined;
-    if (firstError) {
-      return firstError;
-    }
-    if (typeof body.title === 'string' && body.title.length > 0) {
-      return body.title;
-    }
-  } catch {
-    return 'Registration failed.';
-  }
-  return 'Registration failed.';
 }
 
 function readRegisteredAccount(

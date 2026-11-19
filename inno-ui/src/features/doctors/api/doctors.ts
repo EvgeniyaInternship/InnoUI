@@ -1,3 +1,4 @@
+import { httpClient } from '@/shared/api/http-client';
 import {
   accountUrl,
   doctorsUrl,
@@ -16,10 +17,8 @@ import type {
   DoctorSummary,
 } from '../model/doctor';
 
-type ProblemBody = {
-  detail?: string;
-  title?: string;
-  errors?: Record<string, string[]>;
+const profileHttpOptions = {
+  networkMessage: 'Could not reach the profiles service.',
 };
 
 export async function loadDoctors(
@@ -39,21 +38,27 @@ export async function loadDoctors(
   if (filter.workStartDate.length > 0) {
     params.set('WorkStartDate', toIsoDate(filter.workStartDate));
   }
-  const response = await request(`${doctorsUrl}?${params.toString()}`);
-  if (!response.ok) {
-    throw new Error(await readProblem(response, 'Could not load doctors.'));
+  const response = await httpClient.get<unknown>(
+    `${doctorsUrl}?${params.toString()}`,
+    { ...profileHttpOptions, fallbackMessage: 'Could not load doctors.' },
+  );
+  if (!response.ok || response.data === null) {
+    throw new Error(response.message);
   }
-  const page = readCatalog(await response.json());
+  const page = readCatalog(response.data);
   const items = await Promise.all(page.items.map(withAccount));
   return { ...page, items };
 }
 
 export async function loadDoctor(doctorId: string): Promise<DoctorSummary> {
-  const response = await request(`${doctorsUrl}/${doctorId}`);
-  if (!response.ok) {
-    throw new Error(await readProblem(response, 'Could not load this doctor.'));
+  const response = await httpClient.get<unknown>(`${doctorsUrl}/${doctorId}`, {
+    ...profileHttpOptions,
+    fallbackMessage: 'Could not load this doctor.',
+  });
+  if (!response.ok || response.data === null) {
+    throw new Error(response.message);
   }
-  const doctor = readDoctor(await response.json());
+  const doctor = readDoctor(response.data);
   if (doctor === null) {
     throw new Error('Could not read this doctor.');
   }
@@ -61,11 +66,14 @@ export async function loadDoctor(doctorId: string): Promise<DoctorSummary> {
 }
 
 async function withAccount(doctor: DoctorSummary): Promise<DoctorSummary> {
-  const response = await request(`${accountUrl}/${doctor.accountId}`);
-  if (!response.ok) {
+  const response = await httpClient.get<unknown>(
+    `${accountUrl}/${doctor.accountId}`,
+    profileHttpOptions,
+  );
+  if (!response.ok || response.data === null) {
     return doctor;
   }
-  const record = readRecord(await response.json());
+  const record = readRecord(response.data);
   if (record === null) {
     return doctor;
   }
@@ -92,10 +100,9 @@ export async function updateDoctor(
   updateAccount: boolean,
 ): Promise<void> {
   if (updateAccount) {
-    const accountResponse = await request(accountUrl, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    const accountResponse = await httpClient.put(
+      accountUrl,
+      {
         id: doctor.accountId,
         phoneNumber: doctor.phoneNumber?.trim() ?? '',
         email: doctor.email?.trim() ?? '',
@@ -107,38 +114,37 @@ export async function updateDoctor(
           doctor.middleName === null || doctor.middleName.trim().length === 0
             ? null
             : doctor.middleName.trim(),
-      }),
-    });
+      },
+      {
+        ...profileHttpOptions,
+        fallbackMessage: 'Could not update this account.',
+      },
+    );
     if (!accountResponse.ok) {
-      throw new Error(
-        await readProblem(accountResponse, 'Could not update this account.'),
-      );
+      throw new Error(accountResponse.message);
     }
   }
-  const response = await request(doctorsUrl, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
+  const response = await httpClient.put(
+    doctorsUrl,
+    {
       id: doctor.id,
       birthDate: toIsoDate(dateInputValue(doctor.birthDate)),
       workStartDate: toIsoDate(dateInputValue(doctor.workStartDate)),
       officeId: doctor.officeId.trim(),
       specializationId: doctor.specializationId.trim(),
-    }),
-  });
+    },
+    { ...profileHttpOptions, fallbackMessage: 'Could not update this doctor.' },
+  );
   if (!response.ok) {
-    throw new Error(
-      await readProblem(response, 'Could not update this doctor.'),
-    );
+    throw new Error(response.message);
   }
 }
 
 export async function createDoctor(values: CreateDoctorValues): Promise<void> {
   const middleName = values.middleName.trim();
-  const response = await request(registrationProxyUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
+  const response = await httpClient.post(
+    registrationProxyUrl,
+    {
       role: 'Doctor',
       email: values.email.trim(),
       password: values.password,
@@ -151,54 +157,12 @@ export async function createDoctor(values: CreateDoctorValues): Promise<void> {
       workStartDate: toIsoDate(values.workStartDate),
       officeId: values.officeId.trim(),
       specializationId: values.specializationId.trim(),
-    }),
-  });
+    },
+    { ...profileHttpOptions, fallbackMessage: 'Could not create the doctor.' },
+  );
   if (!response.ok) {
-    throw new Error(
-      await readProblem(response, 'Could not create the doctor.'),
-    );
+    throw new Error(response.message);
   }
-}
-
-async function request(url: string, init?: RequestInit): Promise<Response> {
-  try {
-    return await fetch(url, {
-      ...init,
-      credentials: 'include',
-      headers: {
-        Accept: 'application/json',
-        ...init?.headers,
-      },
-    });
-  } catch {
-    throw new Error('Could not reach the profiles service.');
-  }
-}
-
-async function readProblem(
-  response: Response,
-  fallback: string,
-): Promise<string> {
-  try {
-    const body = (await response.json()) as ProblemBody;
-    if (typeof body.detail === 'string' && body.detail.length > 0) {
-      return body.detail;
-    }
-    const firstError = body.errors
-      ? Object.values(body.errors)
-          .flat()
-          .find((message) => message.length > 0)
-      : undefined;
-    if (firstError) {
-      return firstError;
-    }
-    if (typeof body.title === 'string' && body.title.length > 0) {
-      return body.title;
-    }
-  } catch {
-    return fallback;
-  }
-  return fallback;
 }
 
 function readCatalog(value: unknown): DoctorCatalogPage {

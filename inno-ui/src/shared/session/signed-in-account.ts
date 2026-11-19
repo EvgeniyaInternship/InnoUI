@@ -1,3 +1,4 @@
+import { httpClient } from '@/shared/api/http-client';
 import {
   currentAccountUrl,
   profilesCurrentAccountUrl,
@@ -66,16 +67,11 @@ export async function loadSignedInAccount(): Promise<SignedInAccount | null> {
 async function requestCurrentAccount(
   url: string,
 ): Promise<SignedInAccount | null> {
-  try {
-    const response = await fetch(url, { credentials: 'include' });
-    if (!response.ok) {
-      console.log(response.status);
-      return null;
-    }
-    return readAccount(await response.json());
-  } catch {
+  const response = await httpClient.get<unknown>(url);
+  if (!response.ok || response.data === null) {
     return null;
   }
+  return readAccount(response.data);
 }
 
 function readAccountRecord(value: unknown): Record<string, unknown> | null {

@@ -1,3 +1,4 @@
+import { httpClient } from '@/shared/api/http-client';
 import {
   facilityOfficesUrl,
   facilityServicesUrl,
@@ -37,11 +38,13 @@ export async function loadDoctorServices(
     PageNumber: '0',
     PageSize: String(catalogPageSize),
   });
-  const response = await request(`${facilityServicesUrl}?${params.toString()}`);
-  if (!response.ok) {
+  const response = await httpClient.get<unknown>(
+    `${facilityServicesUrl}?${params.toString()}`,
+  );
+  if (!response.ok || response.data === null) {
     return [];
   }
-  const items = readItems(await response.json());
+  const items = readItems(response.data);
   return items
     .map((item) => readService(item))
     .filter((item): item is DoctorService => item !== null);
@@ -59,24 +62,13 @@ async function loadCatalog(url: string): Promise<FacilityRecord[]> {
     PageNumber: '0',
     PageSize: String(catalogPageSize),
   });
-  const response = await request(`${url}?${params.toString()}`);
-  if (!response.ok) {
+  const response = await httpClient.get<unknown>(`${url}?${params.toString()}`);
+  if (!response.ok || response.data === null) {
     return [];
   }
-  return readItems(await response.json())
+  return readItems(response.data)
     .map((item) => readRecord(item))
     .filter((item): item is FacilityRecord => item !== null);
-}
-
-async function request(url: string): Promise<Response> {
-  try {
-    return await fetch(url, {
-      credentials: 'include',
-      headers: { Accept: 'application/json' },
-    });
-  } catch {
-    return new Response(null, { status: 503 });
-  }
 }
 
 function readItems(value: unknown): unknown[] {
