@@ -1,5 +1,18 @@
 import { httpClient } from '@/shared/api/http-client';
-import type { HttpResult } from '@/shared/api/http-client';
+import type { EmptySuccess, HttpResult } from '@/shared/api/http-client';
+import {
+  parseAccountDto,
+  parseDoctorDto,
+  parsePatientDto,
+  parseStaffMemberDto,
+} from '@/shared/api/dto/profiles-dto';
+import type {
+  AccountDto,
+  PatientDto,
+  StaffMemberDto,
+  UpdateAccountDto,
+  UpdatePatientDto,
+} from '@/shared/api/dto/profiles-dto';
 import {
   accountUrl,
   currentAccountUrl,
@@ -23,31 +36,27 @@ import type {
   StaffDetails,
 } from '../model/account-profile';
 
-const roleNames = ['', 'Admin', 'Receptionist', 'Doctor', 'Patient'];
-
 const profileHttpOptions = {
   networkMessage: 'Could not reach the profiles service.',
 };
 
 export async function loadAccountDetails(): Promise<AccountDetails> {
-  const response = await httpClient.get<unknown>(currentAccountUrl, {
+  const response = await httpClient.get<AccountDto>(currentAccountUrl, {
     ...profileHttpOptions,
     fallbackMessage: 'Could not load the account.',
+    parse: parseAccountDto,
   });
   if (!response.ok || response.data === null) {
     throw new Error(failureMessage(response, 'Could not load the account.'));
   }
-  const account = readAccountDetails(response.data);
-  if (account === null) {
-    throw new Error('Could not read the account.');
-  }
-  return account;
+  return toAccountDetails(response.data);
 }
 
 export async function loadPatientDetails(): Promise<PatientDetails | null> {
-  const response = await httpClient.get<unknown>(currentPatientUrl, {
+  const response = await httpClient.get<PatientDto>(currentPatientUrl, {
     ...profileHttpOptions,
     fallbackMessage: 'Could not load personal information.',
+    parse: parsePatientDto,
   });
   if (response.status === 404) {
     return null;
@@ -57,11 +66,7 @@ export async function loadPatientDetails(): Promise<PatientDetails | null> {
       failureMessage(response, 'Could not load personal information.'),
     );
   }
-  const patient = readPatientDetails(response.data);
-  if (patient === null) {
-    throw new Error('Could not read personal information.');
-  }
-  return patient;
+  return toPatientDetails(response.data);
 }
 
 export async function loadStaffDetails(
@@ -71,9 +76,10 @@ export async function loadStaffDetails(
   if (url === null) {
     return null;
   }
-  const response = await httpClient.get<unknown>(url, {
+  const response = await httpClient.get<StaffMemberDto>(url, {
     ...profileHttpOptions,
     fallbackMessage: 'Could not load personal information.',
+    parse: role === doctorRole ? parseDoctorDto : parseStaffMemberDto,
   });
   if (response.status === 404) {
     return null;
@@ -83,19 +89,16 @@ export async function loadStaffDetails(
       failureMessage(response, 'Could not load personal information.'),
     );
   }
-  const details = readStaffDetails(response.data, role === doctorRole);
-  if (details === null) {
-    throw new Error('Could not read personal information.');
-  }
-  return details;
+  return toStaffDetails(response.data);
 }
 
 export async function updateAccountDetails(
   values: AccountDetails,
 ): Promise<SignedInAccount> {
-  const response = await httpClient.put(
+  const request: UpdateAccountDto = createUpdateAccountDto(values);
+  const response = await httpClient.put<EmptySuccess, UpdateAccountDto>(
     accountUrl,
-    createUpdateAccountDto(values),
+    request,
     { ...profileHttpOptions, fallbackMessage: 'Could not update the account.' },
   );
   if (!response.ok) {
@@ -112,9 +115,10 @@ export async function updateAccountDetails(
 export async function updatePatientDetails(
   values: PatientDetails,
 ): Promise<void> {
-  const response = await httpClient.put(
+  const request: UpdatePatientDto = createUpdatePatientDto(values);
+  const response = await httpClient.put<EmptySuccess, UpdatePatientDto>(
     patientUrl,
-    createUpdatePatientDto(values),
+    request,
     {
       ...profileHttpOptions,
       fallbackMessage: 'Could not update personal information.',
@@ -137,10 +141,7 @@ export async function deleteAccount(accountId: string): Promise<void> {
   }
 }
 
-function failureMessage(
-  result: HttpResult<unknown>,
-  fallback: string,
-): string {
+function failureMessage<T>(result: HttpResult<T>, fallback: string): string {
   if (result.message.length > 0 && result.message !== fallback) {
     return result.message;
   }
@@ -151,45 +152,6 @@ function failureMessage(
     return 'You cannot change this account.';
   }
   return result.message.length > 0 ? result.message : fallback;
-}
-
-function readAccountDetails(value: unknown): AccountDetails | null {
-  const record = readRecord(value);
-  if (record === null) {
-    return null;
-  }
-  const id = readString(record, 'id', 'Id');
-  const email = readString(record, 'email', 'Email');
-  const phoneNumber = readString(record, 'phoneNumber', 'PhoneNumber');
-  const firstName = readString(record, 'firstName', 'FirstName');
-  const lastName = readString(record, 'lastName', 'LastName');
-  const createdAt = readString(record, 'createdAt', 'CreatedAt');
-  const role = readRole(record.role ?? record.Role);
-  if (
-    id === null ||
-    email === null ||
-    phoneNumber === null ||
-    firstName === null ||
-    lastName === null ||
-    createdAt === null ||
-    role === null
-  ) {
-    return null;
-  }
-  const middleName = readString(record, 'middleName', 'MiddleName') ?? '';
-  const photoValue = record.photoId ?? record.PhotoId;
-  const photoId = typeof photoValue === 'string' ? photoValue : null;
-  return {
-    id,
-    email,
-    phoneNumber,
-    role,
-    photoId,
-    firstName,
-    lastName,
-    middleName,
-    createdAt,
-  };
 }
 
 function staffUrl(role: number): string | null {
@@ -205,93 +167,38 @@ function staffUrl(role: number): string | null {
   return null;
 }
 
-function readStaffDetails(
-  value: unknown,
-  includesSpecialization: boolean,
-): StaffDetails | null {
-  const record = readRecord(value);
-  if (record === null) {
-    return null;
-  }
-  const birthDate = readDate(record.birthDate ?? record.BirthDate);
-  const workStartDate = readDate(record.workStartDate ?? record.WorkStartDate);
-  const officeId = readString(record, 'officeId', 'OfficeId');
-  const specializationId = readString(
-    record,
-    'specializationId',
-    'SpecializationId',
-  );
-  if (
-    birthDate === null ||
-    workStartDate === null ||
-    officeId === null ||
-    (includesSpecialization && specializationId === null)
-  ) {
-    return null;
-  }
+function toAccountDetails(account: AccountDto): AccountDetails {
   return {
-    birthDate,
-    workStartDate,
-    officeId,
-    specializationId,
+    id: account.id,
+    email: account.email,
+    phoneNumber: account.phoneNumber,
+    role: account.role,
+    photoId: account.photoId,
+    firstName: account.firstName,
+    lastName: account.lastName,
+    middleName: account.middleName ?? '',
+    createdAt: account.createdAt,
   };
 }
 
-function readPatientDetails(value: unknown): PatientDetails | null {
-  const record = readRecord(value);
-  if (record === null) {
-    return null;
-  }
-  const id = readString(record, 'id', 'Id');
-  const birthDate = readDate(record.birthDate ?? record.BirthDate);
-  const insuranceNumber = readString(
-    record,
-    'insuranceNumber',
-    'InsuranceNumber',
-  );
-  if (id === null || birthDate === null || insuranceNumber === null) {
-    return null;
-  }
-  return { id, birthDate, insuranceNumber };
+function toPatientDetails(patient: PatientDto): PatientDetails {
+  return {
+    id: patient.id,
+    birthDate: dateOnly(patient.birthDate),
+    insuranceNumber: patient.insuranceNumber,
+  };
 }
 
-function readRecord(value: unknown): Record<string, unknown> | null {
-  if (typeof value !== 'object' || value === null) {
-    return null;
-  }
-  return value as Record<string, unknown>;
+function toStaffDetails(staff: StaffMemberDto): StaffDetails {
+  return {
+    birthDate: dateOnly(staff.birthDate),
+    workStartDate: dateOnly(staff.workStartDate),
+    officeId: staff.officeId,
+    specializationId: staff.specializationId,
+  };
 }
 
-function readString(
-  record: Record<string, unknown>,
-  camelName: string,
-  pascalName: string,
-): string | null {
-  const value = record[camelName] ?? record[pascalName];
-  return typeof value === 'string' ? value : null;
-}
-
-function readRole(value: unknown): number | null {
-  if (typeof value === 'number' && roleNames[value] !== undefined) {
-    return value;
-  }
-  if (typeof value !== 'string') {
-    return null;
-  }
-  const namedRole = roleNames.findIndex(
-    (roleName) => roleName.toLowerCase() === value.toLowerCase(),
-  );
-  if (namedRole > 0) {
-    return namedRole;
-  }
-  const parsed = Number(value);
-  return roleNames[parsed] === undefined ? null : parsed;
-}
-
-function readDate(value: unknown): string | null {
-  if (typeof value !== 'string') {
-    return null;
-  }
+function dateOnly(value: string): string {
   const match = /^(\d{4}-\d{2}-\d{2})/.exec(value);
-  return match?.[1] ?? null;
+  return match?.[1] ?? value;
 }

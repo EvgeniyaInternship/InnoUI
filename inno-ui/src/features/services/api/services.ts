@@ -1,5 +1,15 @@
 import { httpClient } from '@/shared/api/http-client';
+import type { EmptySuccess } from '@/shared/api/http-client';
 import type { DoctorService } from '@/shared/api/facility';
+import type {
+  CreateServiceDto,
+  ServiceDto,
+} from '@/shared/api/dto/facility-dto';
+import { parseServiceDto } from '@/shared/api/dto/facility-dto';
+import { parsePagedResultDto } from '@/shared/api/dto/paged-result-dto';
+import type { PagedResultDto } from '@/shared/api/dto/paged-result-dto';
+import type { AccountDto, DoctorDto } from '@/shared/api/dto/profiles-dto';
+import { parseAccountDto, parseDoctorDto } from '@/shared/api/dto/profiles-dto';
 import {
   accountUrl,
   doctorsUrl,
@@ -71,16 +81,15 @@ export async function loadServices(
   if (filter.maxPrice.trim().length > 0) {
     params.set('MaxPrice', filter.maxPrice.trim());
   }
-  const response = await httpClient.get<unknown>(
+  const page = await loadServicePage(
     `${facilityServicesUrl}?${params.toString()}`,
-    { ...serviceHttpOptions, fallbackMessage: 'Could not load services.' },
+    'Could not load services.',
   );
-  if (!response.ok || response.data === null) {
-    throw new Error(response.message);
-  }
-  const page = readPage(response.data);
   if (!needsLocalMatch) {
-    return page;
+    return {
+      items: page.items.map(toDoctorService),
+      totalPages: page.totalPages,
+    };
   }
   const minPrice = Number(filter.minPrice);
   const maxPrice = Number(filter.maxPrice);
@@ -98,7 +107,7 @@ export async function loadServices(
   });
   const start = pageNumber * servicePageSize;
   return {
-    items: matched.slice(start, start + servicePageSize),
+    items: matched.slice(start, start + servicePageSize).map(toDoctorService),
     totalPages: Math.ceil(matched.length / servicePageSize),
   };
 }
@@ -111,63 +120,60 @@ export async function loadServicesByTitle(
     PageSize: '100',
     Title: title.trim(),
   });
-  const response = await httpClient.get<unknown>(
+  const response = await httpClient.get<PagedResultDto<ServiceDto>>(
     `${facilityServicesUrl}?${params.toString()}`,
-    serviceHttpOptions,
+    { ...serviceHttpOptions, parse: parsePagedResultDto(parseServiceDto) },
   );
   if (!response.ok || response.data === null) {
     return [];
   }
-  const page = readPage(response.data);
-  return page.items.filter(
-    (item) => item.title.trim().toLowerCase() === title.trim().toLowerCase(),
-  );
+  return response.data.items
+    .filter(
+      (item) => item.title.trim().toLowerCase() === title.trim().toLowerCase(),
+    )
+    .map(toDoctorService);
 }
 
 export async function loadService(serviceId: string): Promise<DoctorService> {
-  const response = await httpClient.get<unknown>(
+  const response = await httpClient.get<ServiceDto>(
     `${facilityServicesUrl}/${serviceId}`,
-    { ...serviceHttpOptions, fallbackMessage: 'Could not load this service.' },
+    {
+      ...serviceHttpOptions,
+      fallbackMessage: 'Could not load this service.',
+      parse: parseServiceDto,
+    },
   );
   if (!response.ok || response.data === null) {
     throw new Error(response.message);
   }
-  const service = readService(response.data);
-  if (service === null) {
-    throw new Error('Could not read this service.');
-  }
-  return service;
+  return toDoctorService(response.data);
 }
 
 export async function loadNamedDoctors(): Promise<NamedDoctor[]> {
   const params = new URLSearchParams({ PageNumber: '0', PageSize: '100' });
-  const response = await httpClient.get<unknown>(
+  const response = await httpClient.get<PagedResultDto<DoctorDto>>(
     `${doctorsUrl}?${params.toString()}`,
-    serviceHttpOptions,
+    { ...serviceHttpOptions, parse: parsePagedResultDto(parseDoctorDto) },
   );
   if (!response.ok || response.data === null) {
     return [];
   }
-  const page = readPageRecord(response.data);
-  const items = Array.isArray(page?.items ?? page?.Items)
-    ? ((page?.items ?? page?.Items) as unknown[])
-    : [];
-  const doctors = await Promise.all(items.map(readNamedDoctor));
-  return doctors.filter((doctor): doctor is NamedDoctor => doctor !== null);
+  return Promise.all(response.data.items.map(readNamedDoctor));
 }
 
 export async function createService(
   values: CreateServiceValues,
 ): Promise<void> {
-  const response = await httpClient.post(
+  const request: CreateServiceDto = {
+    title: values.title.trim(),
+    description: values.description.trim(),
+    price: Number(values.price),
+    isActive: values.isActive,
+    doctorId: values.doctorId,
+  };
+  const response = await httpClient.post<EmptySuccess, CreateServiceDto>(
     facilityServicesUrl,
-    {
-      title: values.title.trim(),
-      description: values.description.trim(),
-      price: Number(values.price),
-      isActive: values.isActive,
-      doctorId: values.doctorId,
-    },
+    request,
     { ...serviceHttpOptions, fallbackMessage: 'Could not create the service.' },
   );
   if (!response.ok) {
@@ -175,100 +181,52 @@ export async function createService(
   }
 }
 
-async function readNamedDoctor(value: unknown): Promise<NamedDoctor | null> {
-  const record = asRecord(value);
-  const id = record === null ? null : readString(record, 'id', 'Id');
-  const accountId =
-    record === null ? null : readString(record, 'accountId', 'AccountId');
-  const specializationId =
-    record === null
-      ? ''
-      : (readString(record, 'specializationId', 'SpecializationId') ?? '');
-  if (id === null || accountId === null) {
-    return null;
+async function loadServicePage(
+  url: string,
+  fallbackMessage: string,
+): Promise<PagedResultDto<ServiceDto>> {
+  const response = await httpClient.get<PagedResultDto<ServiceDto>>(url, {
+    ...serviceHttpOptions,
+    fallbackMessage,
+    parse: parsePagedResultDto(parseServiceDto),
+  });
+  if (!response.ok || response.data === null) {
+    throw new Error(response.message);
   }
-  const accountResponse = await httpClient.get<unknown>(
-    `${accountUrl}/${accountId}`,
-    serviceHttpOptions,
+  return response.data;
+}
+
+async function readNamedDoctor(doctor: DoctorDto): Promise<NamedDoctor> {
+  const accountResponse = await httpClient.get<AccountDto>(
+    `${accountUrl}/${doctor.accountId}`,
+    { ...serviceHttpOptions, parse: parseAccountDto },
   );
-  if (!accountResponse.ok || accountResponse.data === null) {
-    return { id, name: 'Doctor', specializationId };
-  }
-  const account = asRecord(accountResponse.data);
-  if (account === null) {
-    return { id, name: 'Doctor', specializationId };
-  }
-  const firstName = readString(account, 'firstName', 'FirstName') ?? '';
-  const middleName = readString(account, 'middleName', 'MiddleName') ?? '';
-  const lastName = readString(account, 'lastName', 'LastName') ?? '';
-  const name = [firstName, middleName, lastName]
+  const account =
+    accountResponse.ok && accountResponse.data !== null
+      ? accountResponse.data
+      : null;
+  return {
+    id: doctor.id,
+    name: account === null ? 'Doctor' : displayName(account),
+    specializationId: doctor.specializationId,
+  };
+}
+
+function displayName(account: AccountDto): string {
+  const name = [account.firstName, account.middleName ?? '', account.lastName]
     .map((part) => part.trim())
     .filter((part) => part.length > 0)
     .join(' ');
-  return { id, name: name.length > 0 ? name : 'Doctor', specializationId };
+  return name.length > 0 ? name : 'Doctor';
 }
 
-function readPage(value: unknown): ServicePage {
-  const record = readPageRecord(value);
-  const itemsValue = record?.items ?? record?.Items;
-  const items = Array.isArray(itemsValue)
-    ? itemsValue
-        .map((item) => readService(item))
-        .filter((item): item is DoctorService => item !== null)
-    : [];
-  const totalPages = readNumber(record?.totalPages ?? record?.TotalPages) ?? 0;
-  return { items, totalPages };
-}
-
-function readService(value: unknown): DoctorService | null {
-  const record = asRecord(value);
-  if (record === null) {
-    return null;
-  }
-  const id = readString(record, 'id', 'Id');
-  const title = readString(record, 'title', 'Title');
-  const description = readString(record, 'description', 'Description') ?? '';
-  const price = readNumber(record.price ?? record.Price);
-  const isActive = record.isActive ?? record.IsActive;
-  const doctorId = readString(record, 'doctorId', 'DoctorId') ?? '';
-  if (
-    id === null ||
-    title === null ||
-    price === null ||
-    typeof isActive !== 'boolean'
-  ) {
-    return null;
-  }
-  return { id, title, description, price, isActive, doctorId };
-}
-
-function readPageRecord(value: unknown): Record<string, unknown> | null {
-  return asRecord(value);
-}
-
-function asRecord(value: unknown): Record<string, unknown> | null {
-  if (typeof value !== 'object' || value === null) {
-    return null;
-  }
-  return value as Record<string, unknown>;
-}
-
-function readString(
-  record: Record<string, unknown>,
-  camelName: string,
-  pascalName: string,
-): string | null {
-  const value = record[camelName] ?? record[pascalName];
-  return typeof value === 'string' ? value : null;
-}
-
-function readNumber(value: unknown): number | null {
-  if (typeof value === 'number') {
-    return value;
-  }
-  if (typeof value === 'string' && value.trim().length > 0) {
-    const parsed = Number(value);
-    return Number.isNaN(parsed) ? null : parsed;
-  }
-  return null;
+function toDoctorService(service: ServiceDto): DoctorService {
+  return {
+    id: service.id,
+    title: service.title,
+    description: service.description,
+    price: service.price,
+    isActive: service.isActive,
+    doctorId: service.doctorId,
+  };
 }

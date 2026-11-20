@@ -9,10 +9,13 @@ export type HttpResult<T> = {
   message: string;
 };
 
-type HttpOptions = {
+export type JsonParser<T> = (value: unknown) => T | null;
+
+type HttpOptions<T> = {
   fallbackMessage?: string;
   networkMessage?: string;
   credentials?: RequestCredentials;
+  parse?: JsonParser<T>;
 };
 
 type ProblemBody = {
@@ -25,26 +28,29 @@ const defaultFallbackMessage = 'Request failed.';
 const defaultNetworkMessage = 'Could not reach the service.';
 
 export const httpClient = {
-  get<T>(url: string, options?: HttpOptions): Promise<HttpResult<T>> {
-    return send<T>('GET', url, undefined, options);
-  },
-  post<T>(
+  get<TResponse>(
     url: string,
-    body?: unknown,
-    options?: HttpOptions,
-  ): Promise<HttpResult<T>> {
-    return send<T>('POST', url, body, options);
+    options: HttpOptions<TResponse> & { parse: JsonParser<TResponse> },
+  ): Promise<HttpResult<TResponse>> {
+    return send('GET', url, undefined, options);
   },
-  put<T>(
+  post<TResponse = EmptySuccess, TRequest extends object = object>(
     url: string,
-    body?: unknown,
-    options?: HttpOptions,
-  ): Promise<HttpResult<T>> {
-    return send<T>('PUT', url, body, options);
+    body: TRequest,
+    options?: HttpOptions<TResponse>,
+  ): Promise<HttpResult<TResponse>> {
+    return send('POST', url, body, options);
+  },
+  put<TResponse = EmptySuccess, TRequest extends object = object>(
+    url: string,
+    body: TRequest,
+    options?: HttpOptions<TResponse>,
+  ): Promise<HttpResult<TResponse>> {
+    return send('PUT', url, body, options);
   },
   delete(
     url: string,
-    options?: HttpOptions,
+    options?: HttpOptions<EmptySuccess>,
   ): Promise<HttpResult<EmptySuccess>> {
     return send<EmptySuccess>('DELETE', url, undefined, options);
   },
@@ -53,8 +59,8 @@ export const httpClient = {
 async function send<T>(
   method: string,
   url: string,
-  body: unknown,
-  options?: HttpOptions,
+  body: object | undefined,
+  options?: HttpOptions<T>,
 ): Promise<HttpResult<T>> {
   const headers = new Headers({ Accept: 'application/json' });
   if (body !== undefined) {
@@ -70,6 +76,7 @@ async function send<T>(
     return await readResponse<T>(
       response,
       options?.fallbackMessage ?? defaultFallbackMessage,
+      options?.parse,
     );
   } catch {
     return {
@@ -84,6 +91,7 @@ async function send<T>(
 async function readResponse<T>(
   response: Response,
   fallbackMessage: string,
+  parse?: JsonParser<T>,
 ): Promise<HttpResult<T>> {
   const text = await response.text();
   if (!response.ok) {
@@ -95,6 +103,14 @@ async function readResponse<T>(
     };
   }
   if (response.status === 204 || text.trim().length === 0) {
+    if (parse !== undefined) {
+      return {
+        ok: false,
+        status: response.status,
+        data: null,
+        message: fallbackMessage,
+      };
+    }
     return {
       ok: true,
       status: response.status,
@@ -103,10 +119,28 @@ async function readResponse<T>(
     };
   }
   try {
+    const body: unknown = JSON.parse(text);
+    if (parse === undefined) {
+      return {
+        ok: false,
+        status: response.status,
+        data: null,
+        message: fallbackMessage,
+      };
+    }
+    const data = parse(body);
+    if (data === null) {
+      return {
+        ok: false,
+        status: response.status,
+        data: null,
+        message: fallbackMessage,
+      };
+    }
     return {
       ok: true,
       status: response.status,
-      data: JSON.parse(text) as T,
+      data,
       message: '',
     };
   } catch {

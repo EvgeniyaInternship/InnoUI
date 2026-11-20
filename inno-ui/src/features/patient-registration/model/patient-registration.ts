@@ -1,3 +1,5 @@
+import type { RegisterPatientDto } from '@/shared/api/dto/profiles-dto';
+
 export type PatientRegistrationValues = {
   email: string;
   password: string;
@@ -12,19 +14,6 @@ export type PatientRegistrationValues = {
 const phoneNumberPattern = /^\+?[1-9]\d{1,14}$/;
 const nationalInsuranceNumberPattern =
   /^(?!(?:BG|GB|KN|NK|NT|TN|ZZ))[A-CEGHJ-PR-TW-Z][A-NP-Z](?:\s*\d{2}){3}\s*[A-D]$/i;
-
-export type RegisterPatientDto = {
-  role: 'Patient';
-  email: string;
-  password: string;
-  firstName: string;
-  lastName: string;
-  middleName: string | null;
-  phoneNumber: string;
-  birthDate: string;
-  photoId: null;
-  insuranceNumber: string;
-};
 
 export type PatientRegistrationErrors = Partial<
   Pick<PatientRegistrationValues, 'email' | 'phoneNumber' | 'insuranceNumber'>

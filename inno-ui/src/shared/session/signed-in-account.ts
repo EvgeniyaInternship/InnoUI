@@ -1,4 +1,6 @@
 import { httpClient } from '@/shared/api/http-client';
+import { parseAccountResponseDto } from '@/shared/api/dto/profiles-dto';
+import type { AccountDto } from '@/shared/api/dto/profiles-dto';
 import {
   currentAccountUrl,
   profilesCurrentAccountUrl,
@@ -67,11 +69,29 @@ export async function loadSignedInAccount(): Promise<SignedInAccount | null> {
 async function requestCurrentAccount(
   url: string,
 ): Promise<SignedInAccount | null> {
-  const response = await httpClient.get<unknown>(url);
+  const response = await httpClient.get<AccountDto>(url, {
+    parse: parseAccountResponseDto,
+  });
   if (!response.ok || response.data === null) {
     return null;
   }
-  return readAccount(response.data);
+  return toSignedInAccount(response.data);
+}
+
+function toSignedInAccount(account: AccountDto): SignedInAccount | null {
+  const firstName = account.firstName.trim();
+  const lastName = account.lastName.trim();
+  if (firstName.length === 0 || lastName.length === 0) {
+    return null;
+  }
+  const middleName = account.middleName?.trim() ?? '';
+  return {
+    id: account.id,
+    role: account.role,
+    firstName,
+    lastName,
+    middleName: middleName.length === 0 ? null : middleName,
+  };
 }
 
 function readAccountRecord(value: unknown): Record<string, unknown> | null {
