@@ -1,3 +1,6 @@
+import type { RegisterPatientDto } from '@/shared/api/dto/profiles-dto';
+import { toIsoDate } from '@/shared/lib/iso-date';
+
 export type PatientRegistrationValues = {
   email: string;
   password: string;
@@ -12,19 +15,6 @@ export type PatientRegistrationValues = {
 const phoneNumberPattern = /^\+?[1-9]\d{1,14}$/;
 const nationalInsuranceNumberPattern =
   /^(?!(?:BG|GB|KN|NK|NT|TN|ZZ))[A-CEGHJ-PR-TW-Z][A-NP-Z](?:\s*\d{2}){3}\s*[A-D]$/i;
-
-export type RegisterPatientDto = {
-  role: 'Patient';
-  email: string;
-  password: string;
-  firstName: string;
-  lastName: string;
-  middleName: string | null;
-  phoneNumber: string;
-  birthDate: string;
-  photoId: null;
-  insuranceNumber: string;
-};
 
 export type PatientRegistrationErrors = Partial<
   Pick<PatientRegistrationValues, 'email' | 'phoneNumber' | 'insuranceNumber'>
@@ -74,9 +64,7 @@ export function createRegisterPatientDto(
 ): RegisterPatientDto {
   const middleName = values.middleName.trim();
   const birthDate =
-    values.birthDate.length === 0
-      ? ''
-      : new Date(`${values.birthDate}T00:00:00.000Z`).toISOString();
+    values.birthDate.length === 0 ? '' : toIsoDate(values.birthDate);
 
   return {
     role: 'Patient',

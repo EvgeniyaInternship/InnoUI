@@ -1,3 +1,6 @@
+import { httpClient } from '@/shared/api/http-client';
+import { parseAccountResponseDto } from '@/shared/api/dto/profiles-dto';
+import type { AccountDto } from '@/shared/api/dto/profiles-dto';
 import {
   currentAccountUrl,
   profilesCurrentAccountUrl,
@@ -66,16 +69,29 @@ export async function loadSignedInAccount(): Promise<SignedInAccount | null> {
 async function requestCurrentAccount(
   url: string,
 ): Promise<SignedInAccount | null> {
-  try {
-    const response = await fetch(url, { credentials: 'include' });
-    if (!response.ok) {
-      console.log(response.status);
-      return null;
-    }
-    return readAccount(await response.json());
-  } catch {
+  const response = await httpClient.get<AccountDto>(url, {
+    parse: parseAccountResponseDto,
+  });
+  if (!response.ok || response.data === null) {
     return null;
   }
+  return toSignedInAccount(response.data);
+}
+
+export function toSignedInAccount(account: AccountDto): SignedInAccount | null {
+  const firstName = account.firstName.trim();
+  const lastName = account.lastName.trim();
+  if (firstName.length === 0 || lastName.length === 0) {
+    return null;
+  }
+  const middleName = account.middleName?.trim() ?? '';
+  return {
+    id: account.id,
+    role: account.role,
+    firstName,
+    lastName,
+    middleName: middleName.length === 0 ? null : middleName,
+  };
 }
 
 function readAccountRecord(value: unknown): Record<string, unknown> | null {
