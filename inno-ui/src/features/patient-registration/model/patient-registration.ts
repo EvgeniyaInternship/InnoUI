@@ -1,4 +1,5 @@
 import type { RegisterPatientDto } from '@/shared/api/dto/profiles-dto';
+import { toIsoDate } from '@/shared/lib/iso-date';
 
 export type PatientRegistrationValues = {
   email: string;
@@ -63,9 +64,7 @@ export function createRegisterPatientDto(
 ): RegisterPatientDto {
   const middleName = values.middleName.trim();
   const birthDate =
-    values.birthDate.length === 0
-      ? ''
-      : new Date(`${values.birthDate}T00:00:00.000Z`).toISOString();
+    values.birthDate.length === 0 ? '' : toIsoDate(values.birthDate);
 
   return {
     role: 'Patient',

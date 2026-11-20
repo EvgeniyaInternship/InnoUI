@@ -1,5 +1,6 @@
-import { httpClient } from '@/shared/api/http-client';
+import { httpClient, requireData } from '@/shared/api/http-client';
 import type { EmptySuccess } from '@/shared/api/http-client';
+import { profilesHttpOptions } from '@/shared/api/http-options';
 import { parsePagedResultDto } from '@/shared/api/dto/paged-result-dto';
 import type { PagedResultDto } from '@/shared/api/dto/paged-result-dto';
 import { parseAccountDto, parseDoctorDto } from '@/shared/api/dto/profiles-dto';
@@ -15,6 +16,7 @@ import {
   doctorsUrl,
   registrationProxyUrl,
 } from '@/shared/config/auth';
+import { buildUrl } from '@/shared/lib/build-url';
 import {
   dateInputValue,
   doctorPageSize,
@@ -27,10 +29,6 @@ import type {
   DoctorFilter,
   DoctorSummary,
 } from '../model/doctor';
-
-const profileHttpOptions = {
-  networkMessage: 'Could not reach the profiles service.',
-};
 
 export async function loadDoctors(
   filter: DoctorFilter,
@@ -50,43 +48,38 @@ export async function loadDoctors(
     params.set('WorkStartDate', toIsoDate(filter.workStartDate));
   }
   const response = await httpClient.get<PagedResultDto<DoctorDto>>(
-    `${doctorsUrl}?${params.toString()}`,
+    buildUrl(doctorsUrl, { query: params }),
     {
-      ...profileHttpOptions,
+      ...profilesHttpOptions,
       fallbackMessage: 'Could not load doctors.',
       parse: parsePagedResultDto(parseDoctorDto),
     },
   );
-  if (!response.ok || response.data === null) {
-    throw new Error(response.message);
-  }
-  const items = await Promise.all(response.data.items.map(withAccount));
+  const page = requireData(response);
+  const items = await Promise.all(page.items.map(withAccount));
   return {
     items,
-    totalPages: response.data.totalPages,
-    pageNumber: response.data.pageNumber,
+    totalPages: page.totalPages,
+    pageNumber: page.pageNumber,
   };
 }
 
 export async function loadDoctor(doctorId: string): Promise<DoctorSummary> {
   const response = await httpClient.get<DoctorDto>(
-    `${doctorsUrl}/${doctorId}`,
+    buildUrl(doctorsUrl, { path: doctorId }),
     {
-      ...profileHttpOptions,
+      ...profilesHttpOptions,
       fallbackMessage: 'Could not load this doctor.',
       parse: parseDoctorDto,
     },
   );
-  if (!response.ok || response.data === null) {
-    throw new Error(response.message);
-  }
-  return withAccount(response.data);
+  return withAccount(requireData(response));
 }
 
 async function withAccount(doctor: DoctorDto): Promise<DoctorSummary> {
   const response = await httpClient.get<AccountDto>(
-    `${accountUrl}/${doctor.accountId}`,
-    { ...profileHttpOptions, parse: parseAccountDto },
+    buildUrl(accountUrl, { path: doctor.accountId }),
+    { ...profilesHttpOptions, parse: parseAccountDto },
   );
   const account = response.ok ? response.data : null;
   return toDoctorSummary(doctor, account);
@@ -114,12 +107,10 @@ export async function updateDoctor(
       EmptySuccess,
       UpdateAccountDto
     >(accountUrl, accountRequest, {
-      ...profileHttpOptions,
+      ...profilesHttpOptions,
       fallbackMessage: 'Could not update this account.',
     });
-    if (!accountResponse.ok) {
-      throw new Error(accountResponse.message);
-    }
+    requireData(accountResponse);
   }
   const doctorRequest: UpdateDoctorDto = {
     id: doctor.id,
@@ -131,11 +122,12 @@ export async function updateDoctor(
   const response = await httpClient.put<EmptySuccess, UpdateDoctorDto>(
     doctorsUrl,
     doctorRequest,
-    { ...profileHttpOptions, fallbackMessage: 'Could not update this doctor.' },
+    {
+      ...profilesHttpOptions,
+      fallbackMessage: 'Could not update this doctor.',
+    },
   );
-  if (!response.ok) {
-    throw new Error(response.message);
-  }
+  requireData(response);
 }
 
 export async function createDoctor(values: CreateDoctorValues): Promise<void> {
@@ -157,11 +149,9 @@ export async function createDoctor(values: CreateDoctorValues): Promise<void> {
   const response = await httpClient.post<EmptySuccess, RegisterDoctorDto>(
     registrationProxyUrl,
     request,
-    { ...profileHttpOptions, fallbackMessage: 'Could not create the doctor.' },
+    { ...profilesHttpOptions, fallbackMessage: 'Could not create the doctor.' },
   );
-  if (!response.ok) {
-    throw new Error(response.message);
-  }
+  requireData(response);
 }
 
 function toDoctorSummary(

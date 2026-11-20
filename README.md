@@ -1,43 +1,19 @@
 # InnoUI
 
-InnoUI is the web client for the clinic. It is a React application built with Vite and TypeScript.
+The clinic web client lives in [`inno-ui`](inno-ui/README.md). That document has the source layout, environment, application flows, and commands.
 
-## Prerequisites
+## Local setup
 
-Before working on this project, make sure you have the following installed:
+Node.js 22 or later, and npm.
 
-- [Node.js](https://nodejs.org/) (version 22 or later)
-- [npm](https://www.npmjs.com/) (included with Node.js)
-- [Git](https://git-scm.com/downloads)
+```powershell
+git clone https://github.com/EvgeniyaInternship/InnoUI.git
+cd InnoUI\inno-ui
+npm install
+copy .env.example .env
+npm run dev
+```
 
-## Local Setup & Run
+`.env.example` uses port `1111` as a placeholder. Replace it with the ports of the running Auth, Profiles, and Facility APIs, then run `npm run dev` again.
 
-1. **Clone the repository**
-
-   ```bash
-   git clone https://github.com/EvgeniyaInternship/InnoUI.git
-   cd InnoUI
-   ```
-
-2. **Install dependencies**
-
-   The app lives in `inno-ui`:
-
-   ```bash
-   cd inno-ui
-   npm install
-   ```
-
-3. **Start the dev server**
-
-   ```bash
-   npm run dev
-   ```
-
-4. **Verify it's running**
-
-   By default, the app should be available at:
-
-   ```
-   http://localhost:5173
-   ```
+The app is served at `http://localhost:5173`.

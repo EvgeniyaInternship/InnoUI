@@ -78,7 +78,7 @@ async function requestCurrentAccount(
   return toSignedInAccount(response.data);
 }
 
-function toSignedInAccount(account: AccountDto): SignedInAccount | null {
+export function toSignedInAccount(account: AccountDto): SignedInAccount | null {
   const firstName = account.firstName.trim();
   const lastName = account.lastName.trim();
   if (firstName.length === 0 || lastName.length === 0) {

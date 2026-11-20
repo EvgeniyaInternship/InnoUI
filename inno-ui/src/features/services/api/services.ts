@@ -1,5 +1,7 @@
-import { httpClient } from '@/shared/api/http-client';
+import { httpClient, requireData } from '@/shared/api/http-client';
 import type { EmptySuccess } from '@/shared/api/http-client';
+import { facilityHttpOptions } from '@/shared/api/http-options';
+import { toDoctorService } from '@/shared/api/facility';
 import type { DoctorService } from '@/shared/api/facility';
 import type {
   CreateServiceDto,
@@ -15,6 +17,8 @@ import {
   doctorsUrl,
   facilityServicesUrl,
 } from '@/shared/config/auth';
+import { buildUrl } from '@/shared/lib/build-url';
+import { formatPersonName } from '@/shared/lib/person-name';
 
 export type ServiceFilter = {
   title: string;
@@ -53,10 +57,6 @@ export const emptyServiceFilter: ServiceFilter = {
 
 export const servicePageSize = 9;
 
-const serviceHttpOptions = {
-  networkMessage: 'Could not reach the service.',
-};
-
 export async function loadServices(
   filter: ServiceFilter,
   pageNumber: number,
@@ -82,7 +82,7 @@ export async function loadServices(
     params.set('MaxPrice', filter.maxPrice.trim());
   }
   const page = await loadServicePage(
-    `${facilityServicesUrl}?${params.toString()}`,
+    buildUrl(facilityServicesUrl, { query: params }),
     'Could not load services.',
   );
   if (!needsLocalMatch) {
@@ -121,10 +121,10 @@ export async function loadServicesByTitle(
     Title: title.trim(),
   });
   const response = await httpClient.get<PagedResultDto<ServiceDto>>(
-    `${facilityServicesUrl}?${params.toString()}`,
-    { ...serviceHttpOptions, parse: parsePagedResultDto(parseServiceDto) },
+    buildUrl(facilityServicesUrl, { query: params }),
+    { ...facilityHttpOptions, parse: parsePagedResultDto(parseServiceDto) },
   );
-  if (!response.ok || response.data === null) {
+  if (!response.ok) {
     return [];
   }
   return response.data.items
@@ -136,26 +136,23 @@ export async function loadServicesByTitle(
 
 export async function loadService(serviceId: string): Promise<DoctorService> {
   const response = await httpClient.get<ServiceDto>(
-    `${facilityServicesUrl}/${serviceId}`,
+    buildUrl(facilityServicesUrl, { path: serviceId }),
     {
-      ...serviceHttpOptions,
+      ...facilityHttpOptions,
       fallbackMessage: 'Could not load this service.',
       parse: parseServiceDto,
     },
   );
-  if (!response.ok || response.data === null) {
-    throw new Error(response.message);
-  }
-  return toDoctorService(response.data);
+  return toDoctorService(requireData(response));
 }
 
 export async function loadNamedDoctors(): Promise<NamedDoctor[]> {
   const params = new URLSearchParams({ PageNumber: '0', PageSize: '100' });
   const response = await httpClient.get<PagedResultDto<DoctorDto>>(
-    `${doctorsUrl}?${params.toString()}`,
-    { ...serviceHttpOptions, parse: parsePagedResultDto(parseDoctorDto) },
+    buildUrl(doctorsUrl, { query: params }),
+    { ...facilityHttpOptions, parse: parsePagedResultDto(parseDoctorDto) },
   );
-  if (!response.ok || response.data === null) {
+  if (!response.ok) {
     return [];
   }
   return Promise.all(response.data.items.map(readNamedDoctor));
@@ -174,11 +171,12 @@ export async function createService(
   const response = await httpClient.post<EmptySuccess, CreateServiceDto>(
     facilityServicesUrl,
     request,
-    { ...serviceHttpOptions, fallbackMessage: 'Could not create the service.' },
+    {
+      ...facilityHttpOptions,
+      fallbackMessage: 'Could not create the service.',
+    },
   );
-  if (!response.ok) {
-    throw new Error(response.message);
-  }
+  requireData(response);
 }
 
 async function loadServicePage(
@@ -186,47 +184,23 @@ async function loadServicePage(
   fallbackMessage: string,
 ): Promise<PagedResultDto<ServiceDto>> {
   const response = await httpClient.get<PagedResultDto<ServiceDto>>(url, {
-    ...serviceHttpOptions,
+    ...facilityHttpOptions,
     fallbackMessage,
     parse: parsePagedResultDto(parseServiceDto),
   });
-  if (!response.ok || response.data === null) {
-    throw new Error(response.message);
-  }
-  return response.data;
+  return requireData(response);
 }
 
 async function readNamedDoctor(doctor: DoctorDto): Promise<NamedDoctor> {
   const accountResponse = await httpClient.get<AccountDto>(
-    `${accountUrl}/${doctor.accountId}`,
-    { ...serviceHttpOptions, parse: parseAccountDto },
+    buildUrl(accountUrl, { path: doctor.accountId }),
+    { ...facilityHttpOptions, parse: parseAccountDto },
   );
-  const account =
-    accountResponse.ok && accountResponse.data !== null
-      ? accountResponse.data
-      : null;
+  const account = accountResponse.ok ? accountResponse.data : null;
+  const name = account === null ? '' : formatPersonName(account);
   return {
     id: doctor.id,
-    name: account === null ? 'Doctor' : displayName(account),
+    name: name.length > 0 ? name : 'Doctor',
     specializationId: doctor.specializationId,
-  };
-}
-
-function displayName(account: AccountDto): string {
-  const name = [account.firstName, account.middleName ?? '', account.lastName]
-    .map((part) => part.trim())
-    .filter((part) => part.length > 0)
-    .join(' ');
-  return name.length > 0 ? name : 'Doctor';
-}
-
-function toDoctorService(service: ServiceDto): DoctorService {
-  return {
-    id: service.id,
-    title: service.title,
-    description: service.description,
-    price: service.price,
-    isActive: service.isActive,
-    doctorId: service.doctorId,
   };
 }

@@ -1,5 +1,6 @@
 import { httpClient } from '@/shared/api/http-client';
 import type { EmptySuccess, HttpResult } from '@/shared/api/http-client';
+import { profilesHttpOptions } from '@/shared/api/http-options';
 import {
   parseAccountDto,
   parseDoctorDto,
@@ -22,6 +23,8 @@ import {
   currentReceptionistUrl,
   patientUrl,
 } from '@/shared/config/auth';
+import { buildUrl } from '@/shared/lib/build-url';
+import { dateInputValue } from '@/shared/lib/iso-date';
 import type { SignedInAccount } from '@/shared/session/signed-in-account';
 import {
   adminRole,
@@ -36,34 +39,32 @@ import type {
   StaffDetails,
 } from '../model/account-profile';
 
-const profileHttpOptions = {
-  networkMessage: 'Could not reach the profiles service.',
-};
-
 export async function loadAccountDetails(): Promise<AccountDetails> {
   const response = await httpClient.get<AccountDto>(currentAccountUrl, {
-    ...profileHttpOptions,
+    ...profilesHttpOptions,
     fallbackMessage: 'Could not load the account.',
     parse: parseAccountDto,
   });
-  if (!response.ok || response.data === null) {
-    throw new Error(failureMessage(response, 'Could not load the account.'));
+  if (!response.ok) {
+    throw new Error(
+      accountFailureMessage(response, 'Could not load the account.'),
+    );
   }
   return toAccountDetails(response.data);
 }
 
 export async function loadPatientDetails(): Promise<PatientDetails | null> {
   const response = await httpClient.get<PatientDto>(currentPatientUrl, {
-    ...profileHttpOptions,
+    ...profilesHttpOptions,
     fallbackMessage: 'Could not load personal information.',
     parse: parsePatientDto,
   });
   if (response.status === 404) {
     return null;
   }
-  if (!response.ok || response.data === null) {
+  if (!response.ok) {
     throw new Error(
-      failureMessage(response, 'Could not load personal information.'),
+      accountFailureMessage(response, 'Could not load personal information.'),
     );
   }
   return toPatientDetails(response.data);
@@ -77,16 +78,16 @@ export async function loadStaffDetails(
     return null;
   }
   const response = await httpClient.get<StaffMemberDto>(url, {
-    ...profileHttpOptions,
+    ...profilesHttpOptions,
     fallbackMessage: 'Could not load personal information.',
     parse: role === doctorRole ? parseDoctorDto : parseStaffMemberDto,
   });
   if (response.status === 404) {
     return null;
   }
-  if (!response.ok || response.data === null) {
+  if (!response.ok) {
     throw new Error(
-      failureMessage(response, 'Could not load personal information.'),
+      accountFailureMessage(response, 'Could not load personal information.'),
     );
   }
   return toStaffDetails(response.data);
@@ -99,10 +100,15 @@ export async function updateAccountDetails(
   const response = await httpClient.put<EmptySuccess, UpdateAccountDto>(
     accountUrl,
     request,
-    { ...profileHttpOptions, fallbackMessage: 'Could not update the account.' },
+    {
+      ...profilesHttpOptions,
+      fallbackMessage: 'Could not update the account.',
+    },
   );
   if (!response.ok) {
-    throw new Error(failureMessage(response, 'Could not update the account.'));
+    throw new Error(
+      accountFailureMessage(response, 'Could not update the account.'),
+    );
   }
   const middleName = values.middleName.trim();
   return {
@@ -120,28 +126,36 @@ export async function updatePatientDetails(
     patientUrl,
     request,
     {
-      ...profileHttpOptions,
+      ...profilesHttpOptions,
       fallbackMessage: 'Could not update personal information.',
     },
   );
   if (!response.ok) {
     throw new Error(
-      failureMessage(response, 'Could not update personal information.'),
+      accountFailureMessage(response, 'Could not update personal information.'),
     );
   }
 }
 
 export async function deleteAccount(accountId: string): Promise<void> {
-  const response = await httpClient.delete(`${accountUrl}/${accountId}`, {
-    ...profileHttpOptions,
-    fallbackMessage: 'Could not delete the account.',
-  });
+  const response = await httpClient.delete(
+    buildUrl(accountUrl, { path: accountId }),
+    {
+      ...profilesHttpOptions,
+      fallbackMessage: 'Could not delete the account.',
+    },
+  );
   if (!response.ok) {
-    throw new Error(failureMessage(response, 'Could not delete the account.'));
+    throw new Error(
+      accountFailureMessage(response, 'Could not delete the account.'),
+    );
   }
 }
 
-function failureMessage<T>(result: HttpResult<T>, fallback: string): string {
+function accountFailureMessage<T>(
+  result: HttpResult<T>,
+  fallback: string,
+): string {
   if (result.message.length > 0 && result.message !== fallback) {
     return result.message;
   }
@@ -151,7 +165,7 @@ function failureMessage<T>(result: HttpResult<T>, fallback: string): string {
   if (result.status === 403) {
     return 'You cannot change this account.';
   }
-  return result.message.length > 0 ? result.message : fallback;
+  return fallback;
 }
 
 function staffUrl(role: number): string | null {
@@ -184,21 +198,16 @@ function toAccountDetails(account: AccountDto): AccountDetails {
 function toPatientDetails(patient: PatientDto): PatientDetails {
   return {
     id: patient.id,
-    birthDate: dateOnly(patient.birthDate),
+    birthDate: dateInputValue(patient.birthDate),
     insuranceNumber: patient.insuranceNumber,
   };
 }
 
 function toStaffDetails(staff: StaffMemberDto): StaffDetails {
   return {
-    birthDate: dateOnly(staff.birthDate),
-    workStartDate: dateOnly(staff.workStartDate),
+    birthDate: dateInputValue(staff.birthDate),
+    workStartDate: dateInputValue(staff.workStartDate),
     officeId: staff.officeId,
     specializationId: staff.specializationId,
   };
-}
-
-function dateOnly(value: string): string {
-  const match = /^(\d{4}-\d{2}-\d{2})/.exec(value);
-  return match?.[1] ?? value;
 }

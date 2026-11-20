@@ -1,4 +1,5 @@
 import dayjs from 'dayjs';
+import { toIsoDate } from '@/shared/lib/iso-date';
 import type {
   UpdateAccountDto,
   UpdatePatientDto,
@@ -126,7 +127,7 @@ export function createUpdatePatientDto(
 ): UpdatePatientDto {
   return {
     id: values.id,
-    birthDate: new Date(`${values.birthDate}T00:00:00.000Z`).toISOString(),
+    birthDate: toIsoDate(values.birthDate),
     insuranceNumber: values.insuranceNumber.trim(),
   };
 }

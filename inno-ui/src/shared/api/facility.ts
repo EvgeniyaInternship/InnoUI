@@ -12,6 +12,7 @@ import {
   facilityServicesUrl,
   facilitySpecializationsUrl,
 } from '@/shared/config/auth';
+import { buildUrl } from '@/shared/lib/build-url';
 
 export type FacilityRecord = {
   id: string;
@@ -63,7 +64,7 @@ export async function loadDoctorServices(
     PageSize: String(catalogPageSize),
   });
   const response = await httpClient.get<PagedResultDto<ServiceDto>>(
-    `${facilityServicesUrl}?${params.toString()}`,
+    buildUrl(facilityServicesUrl, { query: params }),
     { parse: parsePagedResultDto(parseServiceDto) },
   );
   if (!response.ok || response.data === null) {
@@ -85,7 +86,7 @@ async function loadPage<T>(
     PageSize: String(catalogPageSize),
   });
   const response = await httpClient.get<PagedResultDto<T>>(
-    `${url}?${params.toString()}`,
+    buildUrl(url, { query: params }),
     { parse },
   );
   if (!response.ok || response.data === null) {
@@ -100,7 +101,7 @@ async function loadPage<T>(
   return response.data;
 }
 
-function toDoctorService(service: ServiceDto): DoctorService {
+export function toDoctorService(service: ServiceDto): DoctorService {
   return {
     id: service.id,
     title: service.title,

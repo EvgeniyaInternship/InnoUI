@@ -2,12 +2,26 @@ export type EmptySuccess = {
   success: true;
 };
 
-export type HttpResult<T> = {
-  ok: boolean;
-  status: number;
-  data: T | null;
-  message: string;
-};
+export type HttpResult<T> =
+  | {
+      ok: true;
+      status: number;
+      data: T;
+      message: '';
+    }
+  | {
+      ok: false;
+      status: number;
+      data: null;
+      message: string;
+    };
+
+export function requireData<T>(result: HttpResult<T>): T {
+  if (!result.ok) {
+    throw new Error(result.message);
+  }
+  return result.data;
+}
 
 export type JsonParser<T> = (value: unknown) => T | null;
 
