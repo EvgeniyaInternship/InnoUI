@@ -5,7 +5,7 @@ import { defineConfig, loadEnv } from 'vite';
 
 const sourceRoot = fileURLToPath(new URL('./src', import.meta.url));
 
-export default defineConfig(({ mode }) => {
+export default defineConfig(({ command, mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
   return {
     plugins: [react()],
@@ -14,20 +14,23 @@ export default defineConfig(({ mode }) => {
         '@': path.resolve(sourceRoot),
       },
     },
-    server: {
-      proxy: {
-        '/profiles': {
-          target: readEnv(env, 'PROFILES_PROXY_TARGET'),
-          changeOrigin: true,
-          rewrite: (requestPath) => requestPath.replace(/^\/profiles/, ''),
-        },
-        '/facility': {
-          target: readEnv(env, 'FACILITY_PROXY_TARGET'),
-          changeOrigin: true,
-          rewrite: (requestPath) => requestPath.replace(/^\/facility/, ''),
-        },
-      },
-    },
+    server:
+      command === 'serve'
+        ? {
+            proxy: {
+              '/profiles': {
+                target: readEnv(env, 'PROFILES_PROXY_TARGET'),
+                changeOrigin: true,
+                rewrite: (requestPath) => requestPath.replace(/^\/profiles/, ''),
+              },
+              '/facility': {
+                target: readEnv(env, 'FACILITY_PROXY_TARGET'),
+                changeOrigin: true,
+                rewrite: (requestPath) => requestPath.replace(/^\/facility/, ''),
+              },
+            },
+          }
+        : undefined,
   };
 });
 
