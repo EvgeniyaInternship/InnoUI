@@ -8,9 +8,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogTitle from '@mui/material/DialogTitle';
 import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import dayjs from 'dayjs';
-import type { Dayjs } from 'dayjs';
+import { todayDateInputValue } from '@/shared/lib/iso-date';
 import { createDoctor } from '../api/doctors';
 import type { FacilityRecord } from '@/shared/api/facility';
 import {
@@ -205,40 +203,30 @@ export function CreateDoctorDialog({
             </FieldGroup>
             <FieldGroup>
               <GroupTitle>Dates</GroupTitle>
-              <DatePicker
+              <TextField
                 label="Birth date"
-                value={values.birthDate === '' ? null : dayjs(values.birthDate)}
-                disableFuture
-                onChange={(value: Dayjs | null) =>
-                  setValues((current) => ({
-                    ...current,
-                    birthDate: value?.isValid()
-                      ? value.format('YYYY-MM-DD')
-                      : '',
-                  }))
-                }
+                type="date"
+                size="small"
+                value={values.birthDate}
+                onChange={update('birthDate')}
+                required
+                fullWidth
                 slotProps={{
-                  textField: { size: 'small', required: true, fullWidth: true },
+                  inputLabel: { shrink: true },
+                  htmlInput: { max: todayDateInputValue() },
                 }}
               />
-              <DatePicker
+              <TextField
                 label="Work start date"
-                value={
-                  values.workStartDate === ''
-                    ? null
-                    : dayjs(values.workStartDate)
-                }
-                disableFuture
-                onChange={(value: Dayjs | null) =>
-                  setValues((current) => ({
-                    ...current,
-                    workStartDate: value?.isValid()
-                      ? value.format('YYYY-MM-DD')
-                      : '',
-                  }))
-                }
+                type="date"
+                size="small"
+                value={values.workStartDate}
+                onChange={update('workStartDate')}
+                required
+                fullWidth
                 slotProps={{
-                  textField: { size: 'small', required: true, fullWidth: true },
+                  inputLabel: { shrink: true },
+                  htmlInput: { max: todayDateInputValue() },
                 }}
               />
             </FieldGroup>

@@ -7,9 +7,7 @@ import Button from '@mui/material/Button';
 import MenuItem from '@mui/material/MenuItem';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
-import type { Dayjs } from 'dayjs';
 import { authLoginUrl } from '@/shared/config/auth';
 import { doctorAccountPath, homePath } from '@/shared/config/routes';
 import { navigateTo } from '@/shared/lib/use-route';
@@ -217,20 +215,19 @@ export function DoctorCatalog({ account }: DoctorCatalogProps) {
               fullWidth
             />
           )}
-          <DatePicker
+          <TextField
             label="Work start date"
-            value={
-              draft.workStartDate === '' ? null : dayjs(draft.workStartDate)
-            }
-            onChange={(value: Dayjs | null) =>
+            type="date"
+            size="small"
+            value={draft.workStartDate}
+            onChange={(event) =>
               setDraft((current) => ({
                 ...current,
-                workStartDate: value?.isValid()
-                  ? value.format('YYYY-MM-DD')
-                  : '',
+                workStartDate: event.target.value,
               }))
             }
-            slotProps={{ textField: { size: 'small', fullWidth: true } }}
+            fullWidth
+            slotProps={{ inputLabel: { shrink: true } }}
           />
           <FilterActions>
             <Button type="submit" variant="contained" size="medium">

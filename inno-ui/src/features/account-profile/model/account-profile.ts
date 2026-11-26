@@ -1,4 +1,9 @@
 import dayjs from 'dayjs';
+import { toIsoDate } from '@/shared/lib/iso-date';
+import type {
+  UpdateAccountDto,
+  UpdatePatientDto,
+} from '@/shared/api/dto/profiles-dto';
 
 export type AccountDetails = {
   id: string;
@@ -37,23 +42,6 @@ export type AccountFieldErrors = Partial<
 export type PatientFieldErrors = Partial<
   Pick<PatientDetails, 'birthDate' | 'insuranceNumber'>
 >;
-
-export type UpdateAccountDto = {
-  id: string;
-  phoneNumber: string;
-  email: string;
-  role: number;
-  photoId: string | null;
-  firstName: string;
-  lastName: string;
-  middleName: string | null;
-};
-
-export type UpdatePatientDto = {
-  id: string;
-  birthDate: string;
-  insuranceNumber: string;
-};
 
 const phoneNumberPattern = /^\+?[1-9]\d{1,14}$/;
 const nationalInsuranceNumberPattern =
@@ -139,7 +127,7 @@ export function createUpdatePatientDto(
 ): UpdatePatientDto {
   return {
     id: values.id,
-    birthDate: new Date(`${values.birthDate}T00:00:00.000Z`).toISOString(),
+    birthDate: toIsoDate(values.birthDate),
     insuranceNumber: values.insuranceNumber.trim(),
   };
 }

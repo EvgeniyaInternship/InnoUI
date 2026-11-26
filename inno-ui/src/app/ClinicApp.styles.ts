@@ -12,3 +12,8 @@ export const PageMain = styled('main')(({ theme }) => ({
   ...contentFrame(theme),
   flex: '1 1 auto',
 }));
+
+export const PageStatus = styled('p')(({ theme }) => ({
+  margin: 0,
+  color: theme.palette.text.secondary,
+}));

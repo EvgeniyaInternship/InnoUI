@@ -1,14 +1,21 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
 import PersonAddOutlinedIcon from '@mui/icons-material/PersonAddOutlined';
 import Button from '@mui/material/Button';
 import Dialog from '@mui/material/Dialog';
 import DialogTitle from '@mui/material/DialogTitle';
 import Typography from '@mui/material/Typography';
-import { PatientRegistrationForm } from '@/features/patient-registration/ui/PatientRegistrationForm';
 import { authLoginUrl } from '@/shared/config/auth';
 import type { SignedInAccount } from '@/shared/session/signed-in-account';
 import { ChoiceActions, ChoiceContent } from './AccountAccessDialog.styles';
+
+const PatientRegistrationForm = lazy(() =>
+  import('@/features/patient-registration/ui/PatientRegistrationForm').then(
+    (module) => ({
+      default: module.PatientRegistrationForm,
+    }),
+  ),
+);
 
 type AccountAccessDialogProps = {
   open: boolean;
@@ -22,6 +29,7 @@ export function AccountAccessDialog({
   onRegistered,
 }: AccountAccessDialogProps) {
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
+  const [hasOpenedRegistration, setHasOpenedRegistration] = useState(false);
 
   const closeAll = (): void => {
     setIsRegistrationOpen(false);
@@ -29,6 +37,7 @@ export function AccountAccessDialog({
   };
 
   const openRegistration = (): void => {
+    setHasOpenedRegistration(true);
     setIsRegistrationOpen(true);
   };
 
@@ -81,18 +90,22 @@ export function AccountAccessDialog({
           </ChoiceActions>
         </ChoiceContent>
       </Dialog>
-      <Dialog
-        open={open && isRegistrationOpen}
-        onClose={closeAll}
-        fullWidth
-        maxWidth="sm"
-        scroll="paper"
-      >
-        <PatientRegistrationForm
-          onCancel={closeRegistration}
-          onRegistered={finishRegistration}
-        />
-      </Dialog>
+      {hasOpenedRegistration ? (
+        <Dialog
+          open={open && isRegistrationOpen}
+          onClose={closeAll}
+          fullWidth
+          maxWidth="sm"
+          scroll="paper"
+        >
+          <Suspense fallback={<ChoiceContent>Loading</ChoiceContent>}>
+            <PatientRegistrationForm
+              onCancel={closeRegistration}
+              onRegistered={finishRegistration}
+            />
+          </Suspense>
+        </Dialog>
+      ) : null}
     </>
   );
 }

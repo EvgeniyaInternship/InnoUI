@@ -1,3 +1,6 @@
+import { httpClient } from '@/shared/api/http-client';
+import { parseAccountResponseDto } from '@/shared/api/dto/profiles-dto';
+import type { AccountDto } from '@/shared/api/dto/profiles-dto';
 import {
   currentAccountUrl,
   profilesCurrentAccountUrl,
@@ -29,7 +32,7 @@ export function readSignedInAccount(): SignedInAccount | null {
     if (stored === null) {
       return null;
     }
-    return readAccount(JSON.parse(stored) as unknown);
+    return readStoredAccount(JSON.parse(stored) as unknown);
   } catch {
     return null;
   }
@@ -66,52 +69,50 @@ export async function loadSignedInAccount(): Promise<SignedInAccount | null> {
 async function requestCurrentAccount(
   url: string,
 ): Promise<SignedInAccount | null> {
-  try {
-    const response = await fetch(url, { credentials: 'include' });
-    if (!response.ok) {
-      console.log(response.status);
-      return null;
-    }
-    return readAccount(await response.json());
-  } catch {
+  const response = await httpClient.get<AccountDto>(url, {
+    parse: parseAccountResponseDto,
+  });
+  if (!response.ok || response.data === null) {
     return null;
   }
+  return toSignedInAccount(response.data);
 }
 
-function readAccountRecord(value: unknown): Record<string, unknown> | null {
+export function toSignedInAccount(account: {
+  id?: string | null;
+  role?: number | null;
+  firstName: string;
+  lastName: string;
+  middleName?: string | null;
+}): SignedInAccount | null {
+  const firstName = account.firstName.trim();
+  const lastName = account.lastName.trim();
+  if (firstName.length === 0 || lastName.length === 0) {
+    return null;
+  }
+  const middleName = account.middleName?.trim() ?? '';
+  return {
+    id: account.id,
+    role: account.role,
+    firstName,
+    lastName,
+    middleName: middleName.length === 0 ? null : middleName,
+  };
+}
+
+function readStoredAccount(value: unknown): SignedInAccount | null {
   if (typeof value !== 'object' || value === null) {
     return null;
   }
   const record = value as Record<string, unknown>;
-  if (
-    typeof record.firstName === 'string' ||
-    typeof record.FirstName === 'string'
-  ) {
-    return record;
-  }
-  const nested = record.account ?? record.Account;
-  if (typeof nested === 'object' && nested !== null) {
-    return nested as Record<string, unknown>;
-  }
-  return record;
-}
-
-function readAccount(value: unknown): SignedInAccount | null {
-  const record = readAccountRecord(value);
-  if (record === null) {
-    return null;
-  }
-  const firstNameValue = record.firstName ?? record.FirstName;
-  const lastNameValue = record.lastName ?? record.LastName;
-  const middleNameValue = record.middleName ?? record.MiddleName;
-  if (typeof firstNameValue !== 'string' || typeof lastNameValue !== 'string') {
-    return null;
-  }
-  const firstName = firstNameValue.trim();
-  const lastName = lastNameValue.trim();
+  const firstName =
+    typeof record.firstName === 'string' ? record.firstName.trim() : '';
+  const lastName =
+    typeof record.lastName === 'string' ? record.lastName.trim() : '';
   if (firstName.length === 0 || lastName.length === 0) {
     return null;
   }
+  const middleNameValue = record.middleName;
   if (
     middleNameValue !== null &&
     middleNameValue !== undefined &&
@@ -121,35 +122,15 @@ function readAccount(value: unknown): SignedInAccount | null {
   }
   const middleName =
     typeof middleNameValue === 'string' ? middleNameValue.trim() : '';
+  const id =
+    typeof record.id === 'string' && record.id.length > 0 ? record.id : null;
+  const role =
+    typeof record.role === 'number' && record.role > 0 ? record.role : null;
   return {
-    id: readId(record),
-    role: readRole(record.role ?? record.Role),
+    id,
+    role,
     firstName,
     lastName,
     middleName: middleName.length === 0 ? null : middleName,
   };
-}
-
-const roleNames = ['', 'Admin', 'Receptionist', 'Doctor', 'Patient'];
-
-function readId(record: Record<string, unknown>): string | null {
-  const value = record.id ?? record.Id;
-  return typeof value === 'string' && value.length > 0 ? value : null;
-}
-
-function readRole(value: unknown): number | null {
-  if (
-    typeof value === 'number' &&
-    roleNames[value] !== undefined &&
-    value > 0
-  ) {
-    return value;
-  }
-  if (typeof value !== 'string') {
-    return null;
-  }
-  const namedRole = roleNames.findIndex(
-    (roleName) => roleName.toLowerCase() === value.toLowerCase(),
-  );
-  return namedRole > 0 ? namedRole : null;
 }

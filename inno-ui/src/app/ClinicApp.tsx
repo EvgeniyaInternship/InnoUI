@@ -1,8 +1,5 @@
-import { useEffect, useState } from 'react';
-import { AccountPage } from '@/pages/account/ui/AccountPage';
-import { DoctorsPage } from '@/pages/doctors/ui/DoctorsPage';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { MainPage } from '@/pages/main/ui/MainPage';
-import { ServicesPage } from '@/pages/services/ui/ServicesPage';
 import {
   accountPath,
   doctorsPath,
@@ -21,7 +18,23 @@ import type { SignedInAccount } from '@/shared/session/signed-in-account';
 import { AccountAccessDialog } from '@/widgets/account-access/ui/AccountAccessDialog';
 import { Bottom } from '@/widgets/bottom/ui/Bottom';
 import { Header } from '@/widgets/header/ui/Header';
-import { PageMain, PageRoot } from './ClinicApp.styles';
+import { PageMain, PageRoot, PageStatus } from './ClinicApp.styles';
+
+const AccountPage = lazy(() =>
+  import('@/pages/account/ui/AccountPage').then((module) => ({
+    default: module.AccountPage,
+  })),
+);
+const DoctorsPage = lazy(() =>
+  import('@/pages/doctors/ui/DoctorsPage').then((module) => ({
+    default: module.DoctorsPage,
+  })),
+);
+const ServicesPage = lazy(() =>
+  import('@/pages/services/ui/ServicesPage').then((module) => ({
+    default: module.ServicesPage,
+  })),
+);
 
 export function ClinicApp() {
   const { path, navigate } = useRoute();
@@ -85,23 +98,25 @@ export function ClinicApp() {
         onViewProfile={() => navigate(accountPath)}
       />
       <PageMain>
-        {showAccount ? (
-          <AccountPage
-            onAccountUpdated={setAccount}
-            onBack={() => navigate(homePath)}
-            onDeleted={logOut}
-          />
-        ) : showDoctors ? (
-          <DoctorsPage
-            doctorId={doctorId}
-            account={account}
-            isSessionReady={isSessionReady}
-          />
-        ) : showServices ? (
-          <ServicesPage serviceId={serviceId} account={account} />
-        ) : (
-          <MainPage />
-        )}
+        <Suspense fallback={<PageStatus>Loading</PageStatus>}>
+          {showAccount ? (
+            <AccountPage
+              onAccountUpdated={setAccount}
+              onBack={() => navigate(homePath)}
+              onDeleted={logOut}
+            />
+          ) : showDoctors ? (
+            <DoctorsPage
+              doctorId={doctorId}
+              account={account}
+              isSessionReady={isSessionReady}
+            />
+          ) : showServices ? (
+            <ServicesPage serviceId={serviceId} account={account} />
+          ) : (
+            <MainPage />
+          )}
+        </Suspense>
       </PageMain>
       <Bottom />
       <AccountAccessDialog

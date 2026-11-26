@@ -15,9 +15,7 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogTitle from '@mui/material/DialogTitle';
 import InputAdornment from '@mui/material/InputAdornment';
 import TextField from '@mui/material/TextField';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import dayjs from 'dayjs';
-import type { Dayjs } from 'dayjs';
+import { todayDateInputValue } from '@/shared/lib/iso-date';
 import type { SignedInAccount } from '@/shared/session/signed-in-account';
 import { registerPatient } from '../api/register-patient';
 import {
@@ -42,7 +40,6 @@ type PatientRegistrationFormProps = {
 };
 
 const formId = 'patient-registration-form';
-const birthDateFormat = 'DD MMM YYYY';
 
 export function PatientRegistrationForm({
   onCancel,
@@ -58,14 +55,6 @@ export function PatientRegistrationForm({
     const name = event.target.name as keyof PatientRegistrationValues;
     const value = event.target.value;
     setValues((current) => ({ ...current, [name]: value }));
-    setSubmitError(null);
-  };
-
-  const handleBirthDateChange = (value: Dayjs | null): void => {
-    setValues((current) => ({
-      ...current,
-      birthDate: value?.isValid() ? value.format('YYYY-MM-DD') : '',
-    }));
     setSubmitError(null);
   };
 
@@ -190,22 +179,19 @@ export function PatientRegistrationForm({
                 }}
               />
             </WideField>
-            <DatePicker
+            <TextField
+              name="birthDate"
               label="Birth date"
-              value={values.birthDate === '' ? null : dayjs(values.birthDate)}
-              onChange={handleBirthDateChange}
-              format={birthDateFormat}
-              disableFuture
-              slots={{ openPickerIcon: CalendarMonthOutlinedIcon }}
+              type="date"
+              value={values.birthDate}
+              onChange={handleChange}
+              required
+              fullWidth
               slotProps={{
-                textField: {
-                  required: true,
-                  fullWidth: true,
-                  slotProps: {
-                    input: {
-                      startAdornment: iconAdornment(CalendarMonthOutlinedIcon),
-                    },
-                  },
+                inputLabel: { shrink: true },
+                htmlInput: { max: todayDateInputValue() },
+                input: {
+                  startAdornment: iconAdornment(CalendarMonthOutlinedIcon),
                 },
               }}
             />
