@@ -132,16 +132,16 @@ async function readResponse<T>(
       message: '',
     };
   }
+  if (parse === undefined) {
+    return {
+      ok: true,
+      status: response.status,
+      data: { success: true } as T,
+      message: '',
+    };
+  }
   try {
     const body: unknown = JSON.parse(text);
-    if (parse === undefined) {
-      return {
-        ok: false,
-        status: response.status,
-        data: null,
-        message: fallbackMessage,
-      };
-    }
     const data = parse(body);
     if (data === null) {
       return {
@@ -170,16 +170,19 @@ async function readResponse<T>(
 function readProblemMessage(text: string, fallbackMessage: string): string {
   try {
     const body = JSON.parse(text) as ProblemBody;
-    if (typeof body.detail === 'string' && body.detail.length > 0) {
-      return body.detail;
-    }
-    const firstError = body.errors
+    const errorMessages = body.errors
       ? Object.values(body.errors)
           .flat()
-          .find((message) => message.length > 0)
-      : undefined;
-    if (firstError !== undefined) {
-      return firstError;
+          .filter(
+            (message): message is string =>
+              typeof message === 'string' && message.length > 0,
+          )
+      : [];
+    if (errorMessages.length > 0) {
+      return errorMessages.join(' ');
+    }
+    if (typeof body.detail === 'string' && body.detail.length > 0) {
+      return body.detail;
     }
     if (typeof body.title === 'string' && body.title.length > 0) {
       return body.title;

@@ -3,9 +3,12 @@ import type { EmptySuccess } from '@/shared/api/http-client';
 import { profilesHttpOptions } from '@/shared/api/http-options';
 import { parsePagedResultDto } from '@/shared/api/dto/paged-result-dto';
 import type { PagedResultDto } from '@/shared/api/dto/paged-result-dto';
-import { parseAccountDto, parseDoctorDto } from '@/shared/api/dto/profiles-dto';
+import {
+  parseDoctorAccountDto,
+  parseDoctorDto,
+} from '@/shared/api/dto/profiles-dto';
 import type {
-  AccountDto,
+  DoctorAccountDto,
   DoctorDto,
   RegisterDoctorDto,
   UpdateAccountDto,
@@ -77,9 +80,9 @@ export async function loadDoctor(doctorId: string): Promise<DoctorSummary> {
 }
 
 async function withAccount(doctor: DoctorDto): Promise<DoctorSummary> {
-  const response = await httpClient.get<AccountDto>(
+  const response = await httpClient.get<DoctorAccountDto>(
     buildUrl(accountUrl, { path: doctor.accountId }),
-    { ...profilesHttpOptions, parse: parseAccountDto },
+    { ...profilesHttpOptions, parse: parseDoctorAccountDto },
   );
   const account = response.ok ? response.data : null;
   return toDoctorSummary(doctor, account);
@@ -156,7 +159,7 @@ export async function createDoctor(values: CreateDoctorValues): Promise<void> {
 
 function toDoctorSummary(
   doctor: DoctorDto,
-  account: AccountDto | null,
+  account: DoctorAccountDto | null,
 ): DoctorSummary {
   const middleName = account?.middleName?.trim() ?? '';
   return {

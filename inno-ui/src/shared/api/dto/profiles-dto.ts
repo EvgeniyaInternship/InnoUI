@@ -97,9 +97,22 @@ export type RegisterDoctorDto = {
   readonly specializationId: string;
 };
 
-export type RegisteredUserDto = {
-  readonly role: string;
-  readonly account: AccountDto;
+export type DoctorAccountDto = {
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly middleName: string | null;
+  readonly email: string | null;
+  readonly phoneNumber: string | null;
+  readonly photoId: string | null;
+  readonly role: number | null;
+};
+
+export type RegisteredAccountDto = {
+  readonly id: string | null;
+  readonly role: number | null;
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly middleName: string | null;
 };
 
 export function parseAccountDto(value: unknown): AccountDto | null {
@@ -223,19 +236,45 @@ export function parsePatientDto(value: unknown): PatientDto | null {
   };
 }
 
-export function parseRegisteredUserDto(
-  value: unknown,
-): RegisteredUserDto | null {
+export function parseDoctorAccountDto(value: unknown): DoctorAccountDto | null {
   const record = asRecord(value);
   if (record === null) {
     return null;
   }
-  const account = parseAccountDto(readField(record, 'account'));
-  const role = readString(record, 'role');
-  if (account === null || role === null) {
+  const firstName = readString(record, 'firstName');
+  const lastName = readString(record, 'lastName');
+  if (firstName === null || lastName === null) {
     return null;
   }
-  return { role, account };
+  return {
+    firstName,
+    lastName,
+    middleName: optionalText(record, 'middleName'),
+    email: optionalText(record, 'email'),
+    phoneNumber: optionalText(record, 'phoneNumber'),
+    photoId: readPhotoId(record),
+    role: readRole(readField(record, 'role')),
+  };
+}
+
+export function parseRegisteredAccountDto(
+  value: unknown,
+): RegisteredAccountDto | null {
+  const record = asRecord(value);
+  if (record === null) {
+    return null;
+  }
+  const account = asRecord(readField(record, 'account'));
+  if (account === null) {
+    return null;
+  }
+  return {
+    id: readString(account, 'id'),
+    role: readRole(readField(account, 'role')),
+    firstName: readString(account, 'firstName') ?? '',
+    lastName: readString(account, 'lastName') ?? '',
+    middleName: optionalText(account, 'middleName'),
+  };
 }
 
 function readRole(value: unknown): number | null {
@@ -262,6 +301,11 @@ function readRole(value: unknown): number | null {
 function readPhotoId(record: JsonRecord): string | null {
   const value = readField(record, 'photoId');
   return typeof value === 'string' && value.length > 0 ? value : null;
+}
+
+function optionalText(record: JsonRecord, camelName: string): string | null {
+  const value = readField(record, camelName);
+  return typeof value === 'string' ? value : null;
 }
 
 function readOptionalString(

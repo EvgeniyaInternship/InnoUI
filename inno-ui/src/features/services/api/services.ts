@@ -10,8 +10,14 @@ import type {
 import { parseServiceDto } from '@/shared/api/dto/facility-dto';
 import { parsePagedResultDto } from '@/shared/api/dto/paged-result-dto';
 import type { PagedResultDto } from '@/shared/api/dto/paged-result-dto';
-import type { AccountDto, DoctorDto } from '@/shared/api/dto/profiles-dto';
-import { parseAccountDto, parseDoctorDto } from '@/shared/api/dto/profiles-dto';
+import type {
+  DoctorAccountDto,
+  DoctorDto,
+} from '@/shared/api/dto/profiles-dto';
+import {
+  parseDoctorAccountDto,
+  parseDoctorDto,
+} from '@/shared/api/dto/profiles-dto';
 import {
   accountUrl,
   doctorsUrl,
@@ -192,9 +198,9 @@ async function loadServicePage(
 }
 
 async function readNamedDoctor(doctor: DoctorDto): Promise<NamedDoctor> {
-  const accountResponse = await httpClient.get<AccountDto>(
+  const accountResponse = await httpClient.get<DoctorAccountDto>(
     buildUrl(accountUrl, { path: doctor.accountId }),
-    { ...facilityHttpOptions, parse: parseAccountDto },
+    { ...facilityHttpOptions, parse: parseDoctorAccountDto },
   );
   const account = accountResponse.ok ? accountResponse.data : null;
   const name = account === null ? '' : formatPersonName(account);

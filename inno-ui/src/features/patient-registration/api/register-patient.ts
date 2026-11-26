@@ -1,8 +1,8 @@
 import { httpClient, requireData } from '@/shared/api/http-client';
-import { parseRegisteredUserDto } from '@/shared/api/dto/profiles-dto';
+import { parseRegisteredAccountDto } from '@/shared/api/dto/profiles-dto';
 import type {
   RegisterPatientDto,
-  RegisteredUserDto,
+  RegisteredAccountDto,
 } from '@/shared/api/dto/profiles-dto';
 import { registrationUrl } from '@/shared/config/auth';
 import { toSignedInAccount } from '@/shared/session/signed-in-account';
@@ -14,18 +14,17 @@ export async function registerPatient(
   values: PatientRegistrationValues,
 ): Promise<SignedInAccount> {
   const request: RegisterPatientDto = createRegisterPatientDto(values);
-  const response = await httpClient.post<RegisteredUserDto, RegisterPatientDto>(
-    registrationUrl,
-    request,
-    {
-      credentials: 'omit',
-      fallbackMessage: 'Registration failed.',
-      networkMessage: 'Could not reach the registration service.',
-      parse: parseRegisteredUserDto,
-    },
-  );
+  const response = await httpClient.post<
+    RegisteredAccountDto,
+    RegisterPatientDto
+  >(registrationUrl, request, {
+    credentials: 'omit',
+    fallbackMessage: 'Registration failed.',
+    networkMessage: 'Could not reach the registration service.',
+    parse: parseRegisteredAccountDto,
+  });
   const registered = requireData(response);
-  const account = toSignedInAccount(registered.account);
+  const account = toSignedInAccount(registered);
   if (account === null) {
     throw new Error('Registration did not return an account.');
   }

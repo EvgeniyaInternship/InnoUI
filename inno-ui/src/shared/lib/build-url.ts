@@ -3,17 +3,17 @@ type BuildUrlOptions = {
   query?: URLSearchParams;
 };
 
+function encodePathSegment(segment: string): string {
+  return encodeURIComponent(segment).replaceAll('.', '%2E');
+}
+
 export function buildUrl(base: string, options?: BuildUrlOptions): string {
   const trimmedBase = base.replace(/\/+$/, '');
-  const path = options?.path
-    ?.split('/')
-    .filter((segment) => segment.length > 0)
-    .map((segment) => encodeURIComponent(segment))
-    .join('/');
+  const path = options?.path;
   const withPath =
     path === undefined || path.length === 0
       ? trimmedBase
-      : `${trimmedBase}/${path}`;
+      : `${trimmedBase}/${encodePathSegment(path)}`;
   const query = options?.query?.toString() ?? '';
   return query.length === 0 ? withPath : `${withPath}?${query}`;
 }
