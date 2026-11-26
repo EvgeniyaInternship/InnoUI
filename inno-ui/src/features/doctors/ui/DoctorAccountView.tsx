@@ -12,9 +12,8 @@ import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
-import type { Dayjs } from 'dayjs';
+import { todayDateInputValue } from '@/shared/lib/iso-date';
 import { authLoginUrl } from '@/shared/config/auth';
 import { doctorsPath } from '@/shared/config/routes';
 import { navigateTo } from '@/shared/lib/use-route';
@@ -378,52 +377,40 @@ export function DoctorAccountView({
                 </FieldGroup>
                 <FieldGroup>
                   <GroupTitle>Dates</GroupTitle>
-                  <DatePicker
+                  <TextField
                     label="Birth date"
-                    value={
-                      doctor.birthDate === '' ? null : dayjs(doctor.birthDate)
-                    }
-                    format={dateFormat}
-                    disableFuture
-                    onChange={(value: Dayjs | null) =>
+                    type="date"
+                    size="small"
+                    value={doctor.birthDate}
+                    onChange={(event) =>
                       setDoctor((current) =>
                         current === null
                           ? current
-                          : {
-                              ...current,
-                              birthDate: value?.isValid()
-                                ? value.format('YYYY-MM-DD')
-                                : '',
-                            },
+                          : { ...current, birthDate: event.target.value },
                       )
                     }
+                    fullWidth
                     slotProps={{
-                      textField: { size: 'small', fullWidth: true },
+                      inputLabel: { shrink: true },
+                      htmlInput: { max: todayDateInputValue() },
                     }}
                   />
-                  <DatePicker
+                  <TextField
                     label="Work start date"
-                    value={
-                      doctor.workStartDate === ''
-                        ? null
-                        : dayjs(doctor.workStartDate)
-                    }
-                    format={dateFormat}
-                    disableFuture
-                    onChange={(value: Dayjs | null) =>
+                    type="date"
+                    size="small"
+                    value={doctor.workStartDate}
+                    onChange={(event) =>
                       setDoctor((current) =>
                         current === null
                           ? current
-                          : {
-                              ...current,
-                              workStartDate: value?.isValid()
-                                ? value.format('YYYY-MM-DD')
-                                : '',
-                            },
+                          : { ...current, workStartDate: event.target.value },
                       )
                     }
+                    fullWidth
                     slotProps={{
-                      textField: { size: 'small', fullWidth: true },
+                      inputLabel: { shrink: true },
+                      htmlInput: { max: todayDateInputValue() },
                     }}
                   />
                 </FieldGroup>

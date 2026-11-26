@@ -187,7 +187,6 @@ Versions are the ranges declared in `package.json`.
 | react-dom           | ^19.3.1  |
 | @mui/material       | ^9.5.0   |
 | @mui/icons-material | ^9.5.0   |
-| @mui/x-date-pickers | ^9.17.0  |
 | dayjs               | ^1.11.23 |
 | @emotion/react      | ^11.14.0 |
 | @emotion/styled     | ^11.14.1 |

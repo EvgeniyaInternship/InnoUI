@@ -18,9 +18,8 @@ import DialogTitle from '@mui/material/DialogTitle';
 import InputAdornment from '@mui/material/InputAdornment';
 import TextField from '@mui/material/TextField';
 import Typography from '@mui/material/Typography';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import dayjs from 'dayjs';
-import type { Dayjs } from 'dayjs';
+import { todayDateInputValue } from '@/shared/lib/iso-date';
 import {
   loadOffices,
   loadSpecializations,
@@ -80,8 +79,6 @@ type AccountProfileProps = {
   onBack: () => void;
   onDeleted: () => void;
 };
-
-const birthDateFormat = 'DD MMM YYYY';
 
 export function AccountProfile({
   account,
@@ -353,10 +350,12 @@ function PatientDetailsForm({ patient }: { patient: PatientDetails }) {
     setMessage(null);
   };
 
-  const handleBirthDateChange = (value: Dayjs | null): void => {
+  const handleBirthDateChange = (
+    event: ChangeEvent<HTMLInputElement>,
+  ): void => {
     setValues((current) => ({
       ...current,
-      birthDate: value?.isValid() ? value.format('YYYY-MM-DD') : '',
+      birthDate: event.target.value,
     }));
     setMessage(null);
   };
@@ -395,24 +394,20 @@ function PatientDetailsForm({ patient }: { patient: PatientDetails }) {
       </Typography>
       <ProfileForm noValidate onSubmit={handleSubmit}>
         <FieldGrid>
-          <DatePicker
+          <TextField
             label="Birth date"
-            value={values.birthDate === '' ? null : dayjs(values.birthDate)}
+            type="date"
+            value={values.birthDate}
             onChange={handleBirthDateChange}
-            format={birthDateFormat}
-            disableFuture
-            slots={{ openPickerIcon: CalendarMonthOutlinedIcon }}
+            required
+            fullWidth
+            error={Boolean(formatErrors.birthDate)}
+            helperText={formatErrors.birthDate}
             slotProps={{
-              textField: {
-                required: true,
-                fullWidth: true,
-                error: Boolean(formatErrors.birthDate),
-                helperText: formatErrors.birthDate,
-                slotProps: {
-                  input: {
-                    startAdornment: iconAdornment(CalendarMonthOutlinedIcon),
-                  },
-                },
+              inputLabel: { shrink: true },
+              htmlInput: { max: todayDateInputValue() },
+              input: {
+                startAdornment: iconAdornment(CalendarMonthOutlinedIcon),
               },
             }}
           />
